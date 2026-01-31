@@ -253,7 +253,6 @@ def generate_html_brief(events: List[Dict], run: Dict) -> str:
     campaigns = [e for e in events if e.get('event_type') == 'campaign_deal']
     
     def event_card(event: Dict) -> str:
-        score = event.get('materiality_score', 0)
         event_type = event.get('event_type', 'other').replace('_', ' ').upper()
         
         quotes_html = ""
@@ -266,12 +265,9 @@ def generate_html_brief(events: List[Dict], run: Dict) -> str:
         
         return f'''
         <div style="background:#0a0a0a;border-radius:12px;padding:28px;margin-bottom:16px;border:1px solid #1a1a1a;border-left:3px solid #fff;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <div style="margin-bottom:20px;">
                 <span style="background:#fff;color:#000;padding:6px 16px;border-radius:100px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">
                     {event_type}
-                </span>
-                <span style="color:#fff;font-size:24px;font-weight:700;font-family:monospace;">
-                    {score}
                 </span>
             </div>
             <h3 style="color:#fff;margin:0 0 12px 0;font-size:22px;font-weight:600;line-height:1.3;">{event.get('title', 'N/A')}</h3>
@@ -326,7 +322,11 @@ def generate_html_brief(events: List[Dict], run: Dict) -> str:
             <!-- Header -->
             <div style="padding:60px 40px;text-align:center;border-bottom:1px solid #1a1a1a;">
                 <div style="width:64px;height:64px;border-radius:16px;background:#fff;margin:0 auto 24px;display:flex;align-items:center;justify-content:center;">
-                    <span style="font-size:28px;line-height:64px;">🌍</span>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    </svg>
                 </div>
                 <h1 style="color:#fff;font-size:32px;margin:0 0 8px 0;font-weight:700;letter-spacing:-1px;">
                     SAFAR<span style="opacity:0.4;">AI</span>
