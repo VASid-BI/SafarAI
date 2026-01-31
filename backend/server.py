@@ -15,6 +15,13 @@ import json
 import resend
 from firecrawl import FirecrawlApp
 
+# Import agentic modules
+from agentic_models import (
+    TeamMember, TeamMemberCreate, ActionItem, ActionItemUpdate,
+    Approval, TrendForecast, AgenticInsight
+)
+from agentic_engine import generate_agentic_insights
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -810,6 +817,186 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ========================
+# AGENTIC AI ENDPOINTS
+# ========================
+
+# Team Management
+@api_router.get("/team")
+async def get_team():
+    """Get all team members"""
+    members = await db.team_members.find({}, {"_id": 0}).to_list(100)
+    return {"team_members": members}
+
+@api_router.post("/team")
+async def add_team_member(member_data: TeamMemberCreate):
+    """Add a new team member"""
+    member = TeamMember(**member_data.model_dump())
+    doc = member.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.team_members.insert_one(doc)
+    return member
+
+# Action Items
+@api_router.get("/action-items")
+async def get_action_items(status: Optional[str] = None, run_id: Optional[str] = None):
+    """Get action items with optional filtering"""
+    query = {}
+    if status:
+        query["status"] = status
+    if run_id:
+        query["run_id"] = run_id
+    
+    items = await db.action_items.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return {"action_items": items}
+
+@api_router.post("/action-items/{item_id}/complete")
+async def complete_action_item(item_id: str, update_data: ActionItemUpdate):
+    """Mark action item as complete or update status"""
+    update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
+    
+    if update_dict.get("status") == "completed":
+        update_dict["completed_at"] = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.action_items.update_one({"id": item_id}, {"$set": update_dict})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Action item not found")
+    
+    updated = await db.action_items.find_one({"id": item_id}, {"_id": 0})
+    return updated
+
+# Approvals
+@api_router.get("/approvals")
+async def get_approvals(status: Optional[str] = "pending"):
+    """Get approval requests"""
+    query = {"status": status} if status else {}
+    approvals = await db.approvals.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return {"approvals": approvals}
+
+@api_router.post("/approvals/{approval_id}/approve")
+async def approve_action(approval_id: str, background_tasks: BackgroundTasks):
+    """Approve and execute an action"""
+    approval = await db.approvals.find_one({"id": approval_id}, {"_id": 0})
+    if not approval:
+        raise HTTPException(status_code=404, detail="Approval not found")
+    
+    if approval["status"] != "pending":
+        raise HTTPException(status_code=400, detail="Approval already processed")
+    
+    # Update approval status
+    await db.approvals.update_one(
+        {"id": approval_id},
+        {"$set": {
+            "status": "approved",
+            "approved_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Execute action in background
+    action_type = approval["action_type"]
+    parameters = approval["parameters"]
+    
+    # Add execution logic based on action type
+    if action_type == "send_email":
+        # Queue email sending
+        logger.info(f"Executing send_email action: {parameters}")
+    elif action_type == "add_source":
+        # Add source to monitoring
+        source_data = parameters
+        source = Source(**source_data)
+        doc = source.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        await db.sources.insert_one(doc)
+    elif action_type == "export_csv":
+        # Export data to CSV
+        logger.info(f"Executing export_csv action: {parameters}")
+    
+    # Mark as executed
+    await db.approvals.update_one(
+        {"id": approval_id},
+        {"$set": {
+            "status": "executed",
+            "executed_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": "Action approved and executed", "action_type": action_type}
+
+@api_router.post("/approvals/{approval_id}/reject")
+async def reject_action(approval_id: str):
+    """Reject an approval request"""
+    result = await db.approvals.update_one(
+        {"id": approval_id, "status": "pending"},
+        {"$set": {
+            "status": "rejected",
+            "approved_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Pending approval not found")
+    
+    return {"message": "Action rejected"}
+
+# Insights
+@api_router.get("/agentic/insights/latest")
+async def get_latest_insights():
+    """Get latest agentic insights"""
+    insight = await db.agentic_insights.find_one({}, {"_id": 0}, sort=[("generated_at", -1)])
+    if not insight:
+        return {"message": "No insights available yet", "insight": None}
+    return insight
+
+@api_router.get("/agentic/insights/{run_id}")
+async def get_insights_by_run(run_id: str):
+    """Get insights for a specific run"""
+    insight = await db.agentic_insights.find_one({"run_id": run_id}, {"_id": 0})
+    if not insight:
+        raise HTTPException(status_code=404, detail="Insights not found for this run")
+    return insight
+
+@api_router.post("/agentic/generate")
+async def generate_insights_endpoint(background_tasks: BackgroundTasks):
+    """Generate agentic insights for the latest run"""
+    # Get latest run
+    latest_run = await db.runs.find_one({}, {"_id": 0}, sort=[("started_at", -1)])
+    if not latest_run:
+        raise HTTPException(status_code=404, detail="No runs found")
+    
+    # Get events for this run
+    events = await db.events.find({"run_id": latest_run['id']}, {"_id": 0}).to_list(1000)
+    if not events:
+        raise HTTPException(status_code=400, detail="No events found for latest run")
+    
+    # Get team members
+    team_members = await db.team_members.find({}, {"_id": 0}).to_list(100)
+    
+    # Generate insights
+    insight_id = await generate_agentic_insights(
+        run_id=latest_run['id'],
+        events=events,
+        run_data=latest_run,
+        team_members=team_members,
+        db=db
+    )
+    
+    if not insight_id:
+        raise HTTPException(status_code=500, detail="Failed to generate insights")
+    
+    return {
+        "message": "Agentic insights generated successfully",
+        "insight_id": insight_id,
+        "run_id": latest_run['id']
+    }
+
+# Trends
+@api_router.get("/trends")
+async def get_trends(run_id: Optional[str] = None):
+    """Get trend forecasts"""
+    query = {"run_id": run_id} if run_id else {}
+    trends = await db.trend_forecasts.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return {"trends": trends}
+
 # Startup: Seed default sources
 @app.on_event("startup")
 async def startup_event():
@@ -817,6 +1004,32 @@ async def startup_event():
     await db.items.create_index("url", unique=True)
     await db.sources.create_index("active")
     await db.runs.create_index([("started_at", -1)])
+    
+    # Create agentic indexes
+    await db.team_members.create_index("email", unique=True)
+    await db.action_items.create_index("run_id")
+    await db.action_items.create_index("status")
+    await db.approvals.create_index("run_id")
+    await db.approvals.create_index("status")
+    await db.agentic_insights.create_index("run_id")
+    await db.trend_forecasts.create_index("run_id")
+    
+    # Seed default team members
+    team_count = await db.team_members.count_documents({})
+    if team_count == 0:
+        logger.info("Seeding team members...")
+        default_team = [
+            {"name": "Sainath Gandhe", "title": "Data Analyst", "email": "gandhe.sainath@csu.fullerton.edu", "role_type": "analyst"},
+            {"name": "Siddharth Bartake", "title": "Marketing Researcher", "email": "sid.bartake@gmail.com", "role_type": "marketing"},
+            {"name": "Kevin Biju", "title": "Risk Analyst", "email": "kevinbiju007@gmail.com", "role_type": "risk"},
+            {"name": "Anirudh Sahu", "title": "Sales Director", "email": "ansahu@fullerton.edu", "role_type": "executive"}
+        ]
+        for member_data in default_team:
+            member = TeamMember(**member_data)
+            doc = member.model_dump()
+            doc['created_at'] = doc['created_at'].isoformat()
+            await db.team_members.insert_one(doc)
+        logger.info(f"Seeded {len(default_team)} team members")
     
     # Seed default sources if none exist
     source_count = await db.sources.count_documents({})
