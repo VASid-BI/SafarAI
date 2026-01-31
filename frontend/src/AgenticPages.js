@@ -760,12 +760,14 @@ export const TrendsPage = () => {
                 <div>
                   <p className="text-xs text-white/40 uppercase tracking-wider mb-2">Recommended Actions</p>
                   <ul className="space-y-2">
-                    {trend.recommended_actions.map((action, i) => (
-                      <li key={i} className="text-sm text-white/50 flex items-start gap-2">
-                        <ArrowRight size={16} className="text-white/30 mt-0.5 shrink-0" />
-                        <span>{action}</span>
-                      </li>
-                    ))}
+                    {trend.recommended_actions.map((action, i) => {
+                      return (
+                        <li key={i} className="text-sm text-white/50 flex items-start gap-2">
+                          <ArrowRight size={16} className="text-white/30 mt-0.5 shrink-0" />
+                          <span>{action}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               )}
