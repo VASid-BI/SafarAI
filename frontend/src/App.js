@@ -439,26 +439,24 @@ const Dashboard = () => {
       <IntelMarquee items={marqueeItems} />
       
       {/* Stats Grid */}
-      <ScrollReveal>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: "Active Sources", value: stats?.active_sources || 0, icon: Database },
-            { label: "Total Runs", value: stats?.total_runs || 0, icon: Activity },
-            { label: "Events Extracted", value: stats?.total_events || 0, icon: TrendingUp },
-            { label: "Items Indexed", value: stats?.total_items || 0, icon: FileText },
-          ].map((stat, i) => (
-            <SpotlightCard key={i} className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                  <stat.icon size={18} className="text-white/60" />
-                </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "Active Sources", value: stats?.active_sources || 0, icon: Database },
+          { label: "Total Runs", value: stats?.total_runs || 0, icon: Activity },
+          { label: "Events Extracted", value: stats?.total_events || 0, icon: TrendingUp },
+          { label: "Items Indexed", value: stats?.total_items || 0, icon: FileText },
+        ].map((stat, i) => (
+          <SpotlightCard key={i} className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+                <stat.icon size={18} className="text-white/60" />
               </div>
-              <p className="stat-number">{stat.value}</p>
-              <p className="text-xs text-white/40 uppercase tracking-wider mt-2">{stat.label}</p>
-            </SpotlightCard>
-          ))}
-        </div>
-      </ScrollReveal>
+            </div>
+            <p className="stat-number">{stat.value}</p>
+            <p className="text-xs text-white/40 uppercase tracking-wider mt-2">{stat.label}</p>
+          </SpotlightCard>
+        ))}
+      </div>
       
       {/* Latest Run */}
       {latestRun && (
@@ -799,7 +797,7 @@ const Brief = () => {
       <Section title="Top Movers" events={topMovers} />
       <Section title="Partnerships" events={partnerships} />
       <Section title="Funding" events={funding} />
-      <Section title="Campaigns & Deals" events={campaigns} />
+      <Section title="Campaigns and Deals" events={campaigns} />
     </div>
   );
 };
