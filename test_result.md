@@ -321,9 +321,12 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Email Delivery"
-  stuck_tasks:
-    - "Email Delivery"
+    - "Agentic AI Insights Page"
+    - "Agentic AI Action Items Page"
+    - "Agentic AI Approvals Page"
+    - "Agentic AI Trends Page"
+    - "Agentic AI Navigation Integration"
+  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
