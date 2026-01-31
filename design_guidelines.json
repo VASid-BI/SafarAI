@@ -1,0 +1,137 @@
+{
+  "design_system": {
+    "identity": {
+      "name": "SafarAI Intelligence",
+      "persona": "E1: The Anti-AI Designer",
+      "vibe": "Midnight Ops / Executive Intelligence",
+      "principles": [
+        "Fusion: Military Precision x Luxury Travel",
+        "Density: Data over decoration",
+        "Clarity: High-contrast signals for busy executives",
+        "Depth: Glassmorphism and grid borders to create hierarchy"
+      ]
+    },
+    "typography": {
+      "font_family": {
+        "headings": "Barlow Condensed, sans-serif",
+        "body": "Inter, sans-serif",
+        "mono": "JetBrains Mono, monospace"
+      },
+      "scale": {
+        "h1": "text-4xl md:text-5xl font-bold tracking-tight uppercase",
+        "h2": "text-3xl font-semibold tracking-tight",
+        "h3": "text-xl font-medium tracking-wide uppercase text-muted-foreground",
+        "body": "text-sm leading-relaxed",
+        "mono": "text-xs md:text-sm"
+      },
+      "imports": [
+        "@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');"
+      ]
+    },
+    "colors": {
+      "palette": {
+        "background": "#020617",
+        "surface": "#0F172A",
+        "surface_highlight": "#1E293B",
+        "primary": "#3B82F6",
+        "primary_glow": "rgba(59, 130, 246, 0.5)",
+        "secondary": "#10B981",
+        "accent": "#06B6D4",
+        "destructive": "#F43F5E",
+        "text_primary": "#F8FAFC",
+        "text_secondary": "#94A3B8",
+        "border": "rgba(148, 163, 184, 0.1)"
+      },
+      "usage": {
+        "dashboard_bg": "bg-[#020617]",
+        "card_bg": "bg-[#0F172A]/60 backdrop-blur-md border border-white/5",
+        "active_item": "bg-blue-500/10 text-blue-400 border-l-2 border-blue-500",
+        "success_indicator": "text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]",
+        "error_indicator": "text-rose-400 shadow-[0_0_10px_rgba(244,63,94,0.3)]"
+      }
+    },
+    "layout": {
+      "grid_system": "Bento Grid Mode B (High Density)",
+      "spacing": {
+        "container_padding": "p-6 md:p-8",
+        "gap": "gap-4 md:gap-6",
+        "internal_padding": "p-4"
+      },
+      "structure": {
+        "dashboard": "grid grid-cols-1 md:grid-cols-4 gap-6",
+        "sidebar": "hidden md:flex flex-col w-64 border-r border-white/10 bg-[#020617]",
+        "main_content": "flex-1 overflow-y-auto"
+      }
+    },
+    "components": {
+      "buttons": {
+        "primary": "bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.4)] rounded-none uppercase tracking-wider font-bold text-xs px-6 py-3 transition-all",
+        "secondary": "bg-transparent border border-white/20 hover:border-white/50 text-white rounded-none uppercase tracking-wider text-xs px-6 py-3",
+        "destructive": "bg-rose-900/20 border border-rose-500/50 text-rose-400 hover:bg-rose-900/40 rounded-none uppercase tracking-wider text-xs"
+      },
+      "cards": {
+        "style": "glass",
+        "border": "border border-white/5",
+        "shadow": "shadow-2xl shadow-black/50"
+      },
+      "status_badges": {
+        "success": "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 text-[10px] uppercase tracking-widest rounded-sm",
+        "warning": "bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 text-[10px] uppercase tracking-widest rounded-sm",
+        "error": "bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2 py-0.5 text-[10px] uppercase tracking-widest rounded-sm"
+      }
+    },
+    "visual_enhancers": {
+      "glassmorphism": "backdrop-blur-xl bg-black/40 border border-white/10",
+      "grid_lines": "bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]",
+      "glow_effects": "shadow-[0_0_30px_-5px_rgba(59,130,246,0.3)]"
+    },
+    "assets": {
+      "images": [
+        {
+          "category": "brief_cover",
+          "url": "https://images.unsplash.com/photo-1768346564233-d71f37bd19b6?crop=entropy&cs=srgb&fm=jpg&q=85",
+          "description": "Luxury private jet interior - use for 'High Value Deals' section header"
+        },
+        {
+          "category": "network_bg",
+          "url": "https://images.unsplash.com/photo-1763771787035-99c6c28ec78e?crop=entropy&cs=srgb&fm=jpg&q=85",
+          "description": "Abstract blue data network - use for 'Run Metrics' background overlay"
+        },
+        {
+          "category": "hotel_night",
+          "url": "https://images.unsplash.com/photo-1769766407883-1645a93eed40?crop=entropy&cs=srgb&fm=jpg&q=85",
+          "description": "Modern hotel exterior at night - use for 'Competitor Updates' visual"
+        }
+      ],
+      "icons": "Lucide React (default)"
+    }
+  },
+  "implementation_plan": {
+    "phase_1_setup": [
+      "Install fonts (Barlow Condensed, JetBrains Mono)",
+      "Configure Tailwind colors in tailwind.config.js",
+      "Set up global CSS for dark mode defaults"
+    ],
+    "phase_2_layout": [
+      "Create 'DashboardLayout' component with Sidebar and Header",
+      "Implement 'BentoGrid' container component"
+    ],
+    "phase_3_components": [
+      "Customize Shadcn Button to be 'pill-less' and sharp (Ops style)",
+      "Create 'StatusIndicator' component with glowing dots",
+      "Build 'LogViewer' component using JetBrains Mono and scroll area"
+    ],
+    "phase_4_pages": [
+      "Dashboard: Run Now button (Hero), Last Run Stats (Cards), Pipeline Health (Chart)",
+      "Sources: Data Table with status toggles",
+      "Brief: Magazine-style layout with glass headers and print-friendly CSS"
+    ]
+  },
+  "universal_guidelines": {
+    "react_strict_mode": true,
+    "component_reuse": "Always check src/components/ui before building new",
+    "testing": "Add data-testid to all interactive elements",
+    "accessibility": "Ensure contrast ratios > 4.5:1 for text",
+    "animation": "Use simple CSS transitions for hover states. No complex framer-motion unless necessary."
+  }
+}
