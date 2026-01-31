@@ -253,6 +253,66 @@ frontend:
           agent: "testing"
           comment: "✅ UI components and theme working excellently. 6 spotlight cards with proper hover effects, black background theme consistent, glass effect styling present, premium buttons styled correctly. No console errors detected. Black & white theme implementation is clean and professional."
 
+  - task: "Agentic AI Insights Page"
+    implemented: true
+    working: true
+    file: "frontend/src/AgenticPages.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Insights page (/insights) working perfectly. 'Agentic Intelligence' title displayed correctly. Key Findings section with 3 findings, Risk Alerts section with red styling, Impact Scenarios with confidence scores (74%, 78%), and Dashboard Recommendations grid all present and functional. AI-generated insights displaying properly with black & white Lunar UI theme."
+
+  - task: "Agentic AI Action Items Page"
+    implemented: true
+    working: true
+    file: "frontend/src/AgenticPages.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Action Items page (/action-items) working correctly. 'Action Items' title and stats cards (Total=9, Pending=9, In Progress=0, Completed=0) displaying properly. All filter buttons (All, Pending, In Progress, Completed) functional and clickable. Shows 'No action items found' message when filtered to completed, indicating proper filtering logic. One Complete button found for in-progress tasks."
+
+  - task: "Agentic AI Approvals Page"
+    implemented: true
+    working: true
+    file: "frontend/src/AgenticPages.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Approvals page (/approvals) working excellently. 'Pending Approvals' title displayed. Found 5 approval cards with proper action type badges (ADD SOURCE, SCHEDULE MONITORING), confidence scores (68%, 72%), AI Reasoning sections, and parameter details. Each card has 'Approve & Execute' and 'Reject' buttons. Professional layout with detailed approval workflow."
+
+  - task: "Agentic AI Trends Page"
+    implemented: true
+    working: true
+    file: "frontend/src/AgenticPages.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Trends page (/trends) working perfectly. 'Trend Forecasts' title displayed. Found 5 trend cards with category badges (partnerships, destinations), forecast horizons (next 6 months, next year), confidence progress bars (74%, 78%), Key Indicators sections, and Recommended Actions with arrow icons. All trend data displaying correctly with proper color-coded categories."
+
+  - task: "Agentic AI Navigation Integration"
+    implemented: true
+    working: true
+    file: "frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ Navigation integration working perfectly. All 4 new Agentic AI nav items found: Insights, Tasks, Approvals, Trends. Navigation between all pages functional with proper active page indicators. Sidebar now includes 9 total navigation items (Dashboard, Insights, Tasks, Approvals, Trends, Sources, Intel Brief, Metrics, Logs) with consistent styling."
+
 metadata:
   created_by: "testing_agent"
   version: "1.0"
