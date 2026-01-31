@@ -258,10 +258,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Dashboard Page Layout"
-    - "Intel Brief Page"
-    - "Navigation System"
-    - "UI Components & Theme"
+    - "Email Delivery"
   stuck_tasks:
     - "Email Delivery"
   test_all: false
