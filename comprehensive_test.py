@@ -182,10 +182,10 @@ class SafarAIPipelineTester:
         # Verify HTML contains expected elements
         html_checks = [
             ('DOCTYPE html', 'HTML document structure'),
-            ('SAFAR', 'SafarAI branding'),
+            ('SafarAI', 'SafarAI branding'),
             ('Intelligence Brief', 'Brief title'),
             ('Events', 'Events section'),
-            ('Pipeline Health', 'Pipeline health section')
+            ('Run Health', 'Pipeline health section')
         ]
         
         for check, description in html_checks:
