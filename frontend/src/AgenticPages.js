@@ -217,12 +217,14 @@ export const InsightsPage = () => {
                   <div className="pt-3 border-t border-white/5">
                     <p className="text-xs text-white/40 uppercase tracking-wider mb-2">Assumptions</p>
                     <ul className="space-y-1">
-                      {scenario.assumptions.slice(0, 2).map((assumption, j) => (
-                        <li key={j} className="text-xs text-white/50 flex items-start gap-2">
-                          <span className="text-white/30">•</span>
-                          <span>{assumption}</span>
-                        </li>
-                      ))}
+                      {scenario.assumptions.slice(0, 2).map((assumption, j) => {
+                        return (
+                          <li key={j} className="text-xs text-white/50 flex items-start gap-2">
+                            <span className="text-white/30">•</span>
+                            <span>{assumption}</span>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
                 )}
