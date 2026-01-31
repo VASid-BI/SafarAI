@@ -678,6 +678,25 @@ async def run_pipeline(run_id: str):
         }}
     )
     
+    # Generate agentic insights if events were created
+    if all_events and len(all_events) > 0:
+        await log_run(run_id, "info", f"Generating agentic insights for {len(all_events)} events")
+        try:
+            team_members = await db.team_members.find({}, {"_id": 0}).to_list(100)
+            insight_id = await generate_agentic_insights(
+                run_id=run_id,
+                events=all_events,
+                run_data=run_data,
+                team_members=team_members,
+                db=db
+            )
+            if insight_id:
+                await log_run(run_id, "info", f"Agentic insights generated: {insight_id}")
+            else:
+                await log_run(run_id, "warn", "Failed to generate agentic insights")
+        except Exception as e:
+            await log_run(run_id, "error", f"Agentic insights error: {str(e)}")
+    
     await log_run(run_id, "info", f"Pipeline completed with status: {status}", run_data)
 
 # ========================
