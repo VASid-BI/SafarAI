@@ -745,11 +745,13 @@ export const TrendsPage = () => {
                 <div className="mb-4">
                   <p className="text-xs text-white/40 uppercase tracking-wider mb-2">Key Indicators</p>
                   <div className="flex flex-wrap gap-2">
-                    {trend.key_indicators.map((indicator, i) => (
-                      <span key={i} className="badge-bw badge-outline text-xs">
-                        {indicator}
-                      </span>
-                    ))}
+                    {trend.key_indicators.map((indicator, i) => {
+                      return (
+                        <span key={i} className="badge-bw badge-outline text-xs">
+                          {indicator}
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
               )}
