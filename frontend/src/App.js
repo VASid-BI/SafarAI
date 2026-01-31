@@ -383,14 +383,14 @@ const Dashboard = () => {
   ];
   
   return (
-    <div className="space-y-8 noise-bg" data-testid="dashboard-page">
+    <div className="space-y-6 md:space-y-8 noise-bg w-full" data-testid="dashboard-page">
       {/* Hero Section */}
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         <div>
-          <span className="badge-bw badge-outline mb-6 inline-block">
+          <span className="badge-bw badge-outline mb-4 md:mb-6 inline-block">
             <Zap size={12} /> Intelligence Platform
           </span>
-          <h1 className="text-5xl md:text-6xl font-bold leading-[1.1] tracking-tight">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] tracking-tight">
             Competitive Intelligence
             <br />
             <span className="text-white/40">
@@ -398,10 +398,10 @@ const Dashboard = () => {
             </span>
           </h1>
         </div>
-        <p className="text-white/50 text-lg leading-relaxed max-w-2xl">
+        <p className="text-white/50 text-base md:text-lg leading-relaxed max-w-2xl">
           Monitor competitors, extract partnerships, track funding rounds, and discover deals automatically with AI-powered analysis.
         </p>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4">
           <button
             onClick={triggerRun}
             disabled={isRunning}
@@ -432,20 +432,20 @@ const Dashboard = () => {
       <IntelMarquee items={marqueeItems} />
       
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 w-full">
         {[
           { label: "Active Sources", value: stats?.active_sources || 0, icon: Database },
           { label: "Total Runs", value: stats?.total_runs || 0, icon: Activity },
           { label: "Events Extracted", value: stats?.total_events || 0, icon: TrendingUp },
           { label: "Items Indexed", value: stats?.total_items || 0, icon: FileText },
         ].map((stat, i) => (
-          <SpotlightCard key={i} className="p-6">
-            <div className="flex items-center gap-3 mb-4">
+          <SpotlightCard key={i} className="p-4 md:p-6">
+            <div className="flex items-center gap-3 mb-3 md:mb-4">
               <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
                 <stat.icon size={18} className="text-white/60" />
               </div>
             </div>
-            <p className="stat-number">{stat.value}</p>
+            <p className="stat-number text-3xl md:text-4xl">{stat.value}</p>
             <p className="text-xs text-white/40 uppercase tracking-wider mt-2">{stat.label}</p>
           </SpotlightCard>
         ))}
@@ -453,14 +453,14 @@ const Dashboard = () => {
       
       {/* Latest Run */}
       {latestRun && (
-        <SpotlightCard className="p-8">
-          <div className="flex items-center justify-between mb-6">
+        <SpotlightCard className="p-4 md:p-8 w-full">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center">
                 <BarChart3 size={22} className="text-white/60" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold">Latest Run</h3>
+                <h3 className="text-lg md:text-xl font-semibold">Latest Run</h3>
                 <p className="text-xs text-white/40 font-mono">{latestRun.id?.slice(0, 12)}...</p>
               </div>
             </div>
@@ -470,7 +470,7 @@ const Dashboard = () => {
             </span>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
             {[
               { label: "Sources", value: `${latestRun.sources_ok}/${latestRun.sources_total}` },
               { label: "New", value: latestRun.items_new },
@@ -478,8 +478,8 @@ const Dashboard = () => {
               { label: "Events", value: latestRun.events_created },
               { label: "Emails", value: latestRun.emails_sent },
             ].map((item, i) => (
-              <div key={i} className="text-center p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                <p className="text-2xl font-bold text-white">{item.value}</p>
+              <div key={i} className="text-center p-3 md:p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                <p className="text-xl md:text-2xl font-bold text-white">{item.value}</p>
                 <p className="text-[10px] text-white/40 uppercase tracking-wider mt-1">{item.label}</p>
               </div>
             ))}
@@ -488,8 +488,8 @@ const Dashboard = () => {
       )}
       
       {/* Details Section */}
-      <SpotlightCard className="p-8">
-        <h3 className="text-xl font-semibold mb-6">How It Works</h3>
+      <SpotlightCard className="p-4 md:p-8 w-full">
+        <h3 className="text-lg md:text-xl font-semibold mb-4 md:mb-6">How It Works</h3>
         <Details items={detailsItems} />
       </SpotlightCard>
     </div>
@@ -1025,7 +1025,7 @@ function App() {
       <BrowserRouter>
         <div className="flex">
           <Sidebar />
-          <main className="flex-1 md:ml-72 p-8 min-h-screen">
+          <main className="flex-1 md:ml-72 p-4 md:p-8 min-h-screen max-w-full overflow-x-hidden">
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/sources" element={<Sources />} />
