@@ -384,56 +384,49 @@ const Dashboard = () => {
   
   return (
     <div className="space-y-8 noise-bg" data-testid="dashboard-page">
-      {/* Hero Section with Globe */}
-      <ScrollReveal>
-        <div className="grid md:grid-cols-2 gap-8 items-center min-h-[500px]">
-          <div className="space-y-8">
-            <div>
-              <span className="badge-bw badge-outline mb-6 inline-block">
-                <Zap size={12} /> Intelligence Platform
-              </span>
-              <h1 className="text-5xl md:text-6xl font-bold leading-[1.1] tracking-tight">
-                <TextReveal>Competitive Intelligence</TextReveal>
-                <br />
-                <span className="text-white/40">
-                  <TextReveal delay={0.3}>for Tourism</TextReveal>
-                </span>
-              </h1>
-            </div>
-            <p className="text-white/50 text-lg leading-relaxed max-w-lg">
-              Monitor competitors, extract partnerships, track funding rounds, and discover deals automatically with AI-powered analysis.
-            </p>
-            <div className="flex gap-4">
-              <button
-                onClick={triggerRun}
-                disabled={isRunning}
-                className="btn-premium-bw flex items-center gap-2"
-                data-testid="run-pipeline-btn"
-              >
-                {isRunning ? (
-                  <>
-                    <Loader2 className="animate-spin" size={16} />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Play size={16} />
-                    Execute Pipeline
-                  </>
-                )}
-              </button>
-              <Link to="/brief">
-                <button className="btn-outline-bw flex items-center gap-2">
-                  View Brief <ArrowRight size={14} />
-                </button>
-              </Link>
-            </div>
-          </div>
-          <div className="hidden md:block">
-            <InteractiveGlobe />
-          </div>
+      {/* Hero Section */}
+      <div className="space-y-6">
+        <div>
+          <span className="badge-bw badge-outline mb-6 inline-block">
+            <Zap size={12} /> Intelligence Platform
+          </span>
+          <h1 className="text-5xl md:text-6xl font-bold leading-[1.1] tracking-tight">
+            Competitive Intelligence
+            <br />
+            <span className="text-white/40">
+              for Tourism
+            </span>
+          </h1>
         </div>
-      </ScrollReveal>
+        <p className="text-white/50 text-lg leading-relaxed max-w-2xl">
+          Monitor competitors, extract partnerships, track funding rounds, and discover deals automatically with AI-powered analysis.
+        </p>
+        <div className="flex gap-4">
+          <button
+            onClick={triggerRun}
+            disabled={isRunning}
+            className="btn-premium-bw flex items-center gap-2"
+            data-testid="run-pipeline-btn"
+          >
+            {isRunning ? (
+              <>
+                <Loader2 className="animate-spin" size={16} />
+                Processing...
+              </>
+            ) : (
+              <>
+                <Play size={16} />
+                Execute Pipeline
+              </>
+            )}
+          </button>
+          <Link to="/brief">
+            <button className="btn-outline-bw flex items-center gap-2">
+              View Brief <ArrowRight size={14} />
+            </button>
+          </Link>
+        </div>
+      </div>
       
       {/* Marquee */}
       <IntelMarquee items={marqueeItems} />
@@ -460,49 +453,45 @@ const Dashboard = () => {
       
       {/* Latest Run */}
       {latestRun && (
-        <ScrollReveal>
-          <SpotlightCard className="p-8">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center">
-                  <BarChart3 size={22} className="text-white/60" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold">Latest Run</h3>
-                  <p className="text-xs text-white/40 font-mono">{latestRun.id?.slice(0, 12)}...</p>
-                </div>
+        <SpotlightCard className="p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center">
+                <BarChart3 size={22} className="text-white/60" />
               </div>
-              <span className={`badge-bw ${latestRun.status === 'success' ? 'badge-success-bw' : 'badge-warning-bw'}`}>
-                {latestRun.status === 'success' ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
-                {latestRun.status}
-              </span>
+              <div>
+                <h3 className="text-xl font-semibold">Latest Run</h3>
+                <p className="text-xs text-white/40 font-mono">{latestRun.id?.slice(0, 12)}...</p>
+              </div>
             </div>
-            
-            <div className="grid grid-cols-5 gap-4">
-              {[
-                { label: "Sources", value: `${latestRun.sources_ok}/${latestRun.sources_total}` },
-                { label: "New", value: latestRun.items_new },
-                { label: "Updated", value: latestRun.items_updated },
-                { label: "Events", value: latestRun.events_created },
-                { label: "Emails", value: latestRun.emails_sent },
-              ].map((item, i) => (
-                <div key={i} className="text-center p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                  <p className="text-2xl font-bold text-white">{item.value}</p>
-                  <p className="text-[10px] text-white/40 uppercase tracking-wider mt-1">{item.label}</p>
-                </div>
-              ))}
-            </div>
-          </SpotlightCard>
-        </ScrollReveal>
+            <span className={`badge-bw ${latestRun.status === 'success' ? 'badge-success-bw' : 'badge-warning-bw'}`}>
+              {latestRun.status === 'success' ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
+              {latestRun.status}
+            </span>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {[
+              { label: "Sources", value: `${latestRun.sources_ok}/${latestRun.sources_total}` },
+              { label: "New", value: latestRun.items_new },
+              { label: "Updated", value: latestRun.items_updated },
+              { label: "Events", value: latestRun.events_created },
+              { label: "Emails", value: latestRun.emails_sent },
+            ].map((item, i) => (
+              <div key={i} className="text-center p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                <p className="text-2xl font-bold text-white">{item.value}</p>
+                <p className="text-[10px] text-white/40 uppercase tracking-wider mt-1">{item.label}</p>
+              </div>
+            ))}
+          </div>
+        </SpotlightCard>
       )}
       
       {/* Details Section */}
-      <ScrollReveal>
-        <SpotlightCard className="p-8">
-          <h3 className="text-xl font-semibold mb-6">How It Works</h3>
-          <Details items={detailsItems} />
-        </SpotlightCard>
-      </ScrollReveal>
+      <SpotlightCard className="p-8">
+        <h3 className="text-xl font-semibold mb-6">How It Works</h3>
+        <Details items={detailsItems} />
+      </SpotlightCard>
     </div>
   );
 };
