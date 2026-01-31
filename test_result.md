@@ -190,17 +190,53 @@ backend:
           comment: "Error handling working well. Pipeline handles partial failures gracefully. LLM classification errors are caught and logged without breaking the pipeline. No critical errors found in recent runs."
 
 frontend:
-  - task: "Frontend Testing"
-    implemented: false
+  - task: "Dashboard Page Layout"
+    implemented: true
     working: "NA"
-    file: "N/A"
+    file: "frontend/src/App.js"
     stuck_count: 0
-    priority: "low"
-    needs_retesting: false
+    priority: "high"
+    needs_retesting: true
     status_history:
         - working: "NA"
           agent: "testing"
-          comment: "Frontend testing not performed as per testing agent guidelines - backend-only testing focus."
+          comment: "Need to test dashboard layout after fixes - verify hero section, stats cards visibility, marquee, and no cutoff issues."
+
+  - task: "Intel Brief Page"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "testing"
+          comment: "Need to test Intel Brief page - verify event cards display without materiality scores, proper event type badges, and evidence sections."
+
+  - task: "Navigation System"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/App.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "testing"
+          comment: "Need to test navigation between Dashboard, Sources, Intel Brief, Metrics, and Logs pages."
+
+  - task: "UI Components & Theme"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/App.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "testing"
+          comment: "Need to test spotlight cards hover effects, black & white theme consistency, and console error checks."
 
 metadata:
   created_by: "testing_agent"
