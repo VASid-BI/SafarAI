@@ -649,6 +649,16 @@ async def run_pipeline(run_id: str):
         # Send email
         if await send_brief_email(html_brief, run_data_for_brief):
             emails_sent = 1
+    else:
+        # If no new events, send the latest available brief
+        await log_run(run_id, "info", "No new events detected, sending latest available brief")
+        latest_brief = await db.briefs.find_one({}, {"_id": 0}, sort=[("created_at", -1)])
+        if latest_brief:
+            # Send the latest brief with current run stats
+            run_data_for_brief = {**run_data, "status": status}
+            if await send_brief_email(latest_brief['html'], run_data_for_brief):
+                emails_sent = 1
+                await log_run(run_id, "info", f"Sent latest brief from {latest_brief['created_at']}")
     
     # Update run record
     await db.runs.update_one(
