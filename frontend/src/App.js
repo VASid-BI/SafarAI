@@ -10,7 +10,7 @@ import {
   Plus, CheckCircle2, XCircle, AlertTriangle, Loader2,
   ExternalLink, Trash2, Clock, Zap, ChevronDown,
   TrendingUp, Mail, BarChart3, Shield, Globe as GlobeIcon,
-  ArrowRight
+  ArrowRight, Brain
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Toaster, toast } from "sonner";
+import { InsightsPage, ActionItemsPage, ApprovalsPage, TrendsPage } from "./AgenticPages";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -272,6 +273,10 @@ const Sidebar = () => {
   
   const navItems = [
     { path: "/", label: "Dashboard", icon: Activity },
+    { path: "/insights", label: "Insights", icon: Brain },
+    { path: "/action-items", label: "Tasks", icon: CheckCircle2 },
+    { path: "/approvals", label: "Approvals", icon: Shield },
+    { path: "/trends", label: "Trends", icon: TrendingUp },
     { path: "/sources", label: "Sources", icon: Database },
     { path: "/brief", label: "Intel Brief", icon: FileText },
     { path: "/runs", label: "Metrics", icon: BarChart3 },
@@ -1028,6 +1033,10 @@ function App() {
           <main className="flex-1 md:ml-72 p-4 md:p-8 min-h-screen max-w-full overflow-x-hidden">
             <Routes>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/insights" element={<InsightsPage />} />
+              <Route path="/action-items" element={<ActionItemsPage />} />
+              <Route path="/approvals" element={<ApprovalsPage />} />
+              <Route path="/trends" element={<TrendsPage />} />
               <Route path="/sources" element={<Sources />} />
               <Route path="/brief" element={<Brief />} />
               <Route path="/runs" element={<Runs />} />
