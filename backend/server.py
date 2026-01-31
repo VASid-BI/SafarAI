@@ -951,10 +951,16 @@ async def generate_insights_endpoint(background_tasks: BackgroundTasks):
     if not latest_run:
         raise HTTPException(status_code=404, detail="No runs found")
     
-    # Get events for this run
+    # Get events for this run (or from latest brief if no events in run)
     events = await db.events.find({"run_id": latest_run['id']}, {"_id": 0}).to_list(1000)
+    
+    # If no events for latest run, use all available events
     if not events:
-        raise HTTPException(status_code=400, detail="No events found for latest run")
+        logger.warning(f"No events for run {latest_run['id']}, using all available events")
+        events = await db.events.find({}, {"_id": 0}).sort("created_at", -1).limit(50).to_list(50)
+    
+    if not events:
+        raise HTTPException(status_code=400, detail="No events available in database")
     
     # Get team members
     team_members = await db.team_members.find({}, {"_id": 0}).to_list(100)
@@ -974,7 +980,8 @@ async def generate_insights_endpoint(background_tasks: BackgroundTasks):
     return {
         "message": "Agentic insights generated successfully",
         "insight_id": insight_id,
-        "run_id": latest_run['id']
+        "run_id": latest_run['id'],
+        "events_analyzed": len(events)
     }
 
 # Trends
