@@ -36,6 +36,7 @@ db = client[os.environ['DB_NAME']]
 # Initialize APIs
 resend.api_key = os.environ.get('RESEND_API_KEY', '')
 firecrawl = FirecrawlApp(api_key=os.environ.get('FIRECRAWL_API_KEY', ''))
+reducto_client = Reducto(api_key=os.environ.get('REDUCTO_API_KEY', ''))
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
