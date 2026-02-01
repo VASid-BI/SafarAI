@@ -1576,15 +1576,15 @@ async def get_sources_health():
         ).sort("checked_at", -1).to_list(100)
         
         total = len(source_logs)
-        successes = len([l for l in source_logs if l.get('success')])
+        successes = len([log for log in source_logs if log.get('success')])
         failures = total - successes
         
-        last_success = next((l for l in source_logs if l.get('success')), None)
-        last_failure = next((l for l in source_logs if not l.get('success')), None)
+        last_success = next((log for log in source_logs if log.get('success')), None)
+        last_failure = next((log for log in source_logs if not log.get('success')), None)
         
         avg_response_time = 0
         if source_logs:
-            response_times = [l.get('response_time_ms', 0) for l in source_logs if l.get('response_time_ms')]
+            response_times = [log.get('response_time_ms', 0) for log in source_logs if log.get('response_time_ms')]
             avg_response_time = sum(response_times) / len(response_times) if response_times else 0
         
         health_data.append(SourceHealth(
