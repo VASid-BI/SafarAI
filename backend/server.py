@@ -898,16 +898,6 @@ async def run_pipeline(run_id: str):
             await log_run(run_id, "warn", f"Failed to process PDF: {pdf_url}", {"error": str(pdf_error)})
     
     await log_run(run_id, "info", f"PDF processing complete. Processed {run_data['pdfs_processed']} PDFs")
-            "id": str(uuid.uuid4()),
-            "source_id": source_id,
-            "source_name": source_name,
-            "run_id": run_id,
-            "success": source_success,
-            "error": source_error,
-            "response_time_ms": response_time_ms,
-            "checked_at": end_time.isoformat()
-        }
-        await db.source_health.insert_one(health_doc)
     
     # Determine final status
     if run_data['sources_failed'] == 0:
@@ -932,6 +922,7 @@ async def run_pipeline(run_id: str):
             "run_id": run_id,
             "html": html_brief,
             "events": clean_events,
+            "pdfs_processed": run_data['pdfs_processed'],
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         await db.briefs.insert_one(brief_doc)
