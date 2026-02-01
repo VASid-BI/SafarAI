@@ -688,10 +688,28 @@ async def run_pipeline(run_id: str):
                     await log_run(run_id, "warn", f"Failed to process link: {link_url}", {"error": str(link_error)})
             
             run_data['sources_ok'] += 1
+            source_success = True
             
         except Exception as e:
             run_data['sources_failed'] += 1
+            source_error = str(e)
             await log_run(run_id, "error", f"Failed to process source: {source_name}", {"error": str(e)})
+        
+        # Log source health
+        end_time = datetime.now(timezone.utc)
+        response_time_ms = (end_time - start_time).total_seconds() * 1000
+        
+        health_doc = {
+            "id": str(uuid.uuid4()),
+            "source_id": source_id,
+            "source_name": source_name,
+            "run_id": run_id,
+            "success": source_success,
+            "error": source_error,
+            "response_time_ms": response_time_ms,
+            "checked_at": end_time.isoformat()
+        }
+        await db.source_health.insert_one(health_doc)
     
     # Determine final status
     if run_data['sources_failed'] == 0:
