@@ -514,10 +514,10 @@ async def run_pipeline(run_id: str):
                 # Use Reducto for PDF parsing
                 await log_run(run_id, "info", f"Processing PDF with Reducto: {source_name}")
                 try:
-                    # Use Reducto's parse.run method with document_url
+                    # Use Reducto's parse.run method - input is URL string directly
                     pdf_result = await asyncio.to_thread(
                         reducto_client.parse.run,
-                        document_url=source_url
+                        input=source_url
                     )
                     
                     # Extract text from chunks
