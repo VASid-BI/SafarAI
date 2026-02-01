@@ -502,30 +502,66 @@ async def run_pipeline(run_id: str):
         
         await log_run(run_id, "info", f"Processing source: {source_name}", {"url": source_url})
         
+        start_time = datetime.now(timezone.utc)
+        source_success = False
+        source_error = None
+        
         try:
-            # Crawl with Firecrawl
-            crawl_result = await asyncio.to_thread(
-                firecrawl.scrape,
-                source_url,
-                formats=['markdown', 'links']
-            )
+            # Check if URL is a PDF
+            is_pdf = source_url.lower().endswith('.pdf')
             
-            if not crawl_result:
-                raise Exception("Empty crawl result")
-            
-            # Handle Firecrawl Document object
-            if hasattr(crawl_result, 'markdown'):
-                markdown = crawl_result.markdown or ''
-                title = getattr(crawl_result.metadata, 'title', source_name) if hasattr(crawl_result, 'metadata') and crawl_result.metadata else source_name
-                links = getattr(crawl_result, 'links', []) or []
+            if is_pdf:
+                # Use Reducto for PDF parsing
+                await log_run(run_id, "info", f"Processing PDF with Reducto: {source_name}")
+                try:
+                    pdf_result = await asyncio.to_thread(
+                        reducto_client.parse,
+                        document_url=source_url
+                    )
+                    markdown = pdf_result.to_markdown() if hasattr(pdf_result, 'to_markdown') else str(pdf_result)
+                    title = source_name
+                    links = []
+                except Exception as pdf_error:
+                    await log_run(run_id, "warn", f"PDF parsing failed, trying Firecrawl: {pdf_error}")
+                    # Fallback to Firecrawl for PDFs
+                    crawl_result = await asyncio.to_thread(
+                        firecrawl.scrape,
+                        source_url,
+                        formats=['markdown']
+                    )
+                    markdown = crawl_result.markdown if hasattr(crawl_result, 'markdown') else crawl_result.get('markdown', '')
+                    title = source_name
+                    links = []
             else:
-                # Fallback for dict response
-                markdown = crawl_result.get('markdown', '')
-                title = crawl_result.get('metadata', {}).get('title', source_name)
-                links = crawl_result.get('links', [])
+                # Crawl with Firecrawl for HTML pages
+                crawl_result = await asyncio.to_thread(
+                    firecrawl.scrape,
+                    source_url,
+                    formats=['markdown', 'links']
+                )
+                
+                if not crawl_result:
+                    raise Exception("Empty crawl result")
+                
+                # Handle Firecrawl Document object
+                if hasattr(crawl_result, 'markdown'):
+                    markdown = crawl_result.markdown or ''
+                    title = getattr(crawl_result.metadata, 'title', source_name) if hasattr(crawl_result, 'metadata') and crawl_result.metadata else source_name
+                    links = getattr(crawl_result, 'links', []) or []
+                else:
+                    # Fallback for dict response
+                    markdown = crawl_result.get('markdown', '')
+                    title = crawl_result.get('metadata', {}).get('title', source_name)
+                    links = crawl_result.get('links', [])
             
-            # Filter and limit links
-            filtered_links = [l for l in links if filter_link(l)][:8]
+            # Filter links for PDFs and relevant content
+            filtered_links = []
+            for link in links:
+                if filter_link(link):
+                    filtered_links.append(link)
+                elif link.lower().endswith('.pdf'):
+                    filtered_links.append(link)
+            filtered_links = filtered_links[:8]
             
             await log_run(run_id, "info", f"Found {len(filtered_links)} relevant links from {source_name}")
             
