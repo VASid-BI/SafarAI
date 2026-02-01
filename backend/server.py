@@ -454,6 +454,10 @@ def generate_html_brief(events: List[Dict], run: Dict) -> str:
     time_now = datetime.now(timezone.utc).strftime("%H:%M UTC")
     total_events = len(events)
     high_priority = len([e for e in events if e.get('materiality_score', 0) >= 70])
+    pdf_sourced = len([e for e in events if e.get('is_pdf_source', False)])
+    
+    # Create PDF section if we have PDF-sourced events
+    pdf_events = [e for e in events if e.get('is_pdf_source', False)]
     
     html = f'''
     <!DOCTYPE html>
