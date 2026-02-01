@@ -374,6 +374,17 @@ def generate_html_brief(events: List[Dict], run: Dict) -> str:
     
     def event_card(event: Dict) -> str:
         event_type = event.get('event_type', 'other').replace('_', ' ').upper()
+        is_pdf = event.get('is_pdf_source', False)
+        pdf_url = event.get('pdf_source_url', '')
+        
+        # PDF source indicator
+        pdf_badge = ""
+        if is_pdf:
+            pdf_badge = f'''
+            <span style="background:#dc2626;color:#fff;padding:4px 10px;border-radius:100px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-left:8px;">
+                PDF SOURCE
+            </span>
+            '''
         
         quotes_html = ""
         for quote in event.get('evidence_quotes', [])[:2]:
@@ -383,12 +394,27 @@ def generate_html_brief(events: List[Dict], run: Dict) -> str:
             </div>
             '''
         
+        # PDF source link section
+        pdf_source_html = ""
+        if is_pdf and pdf_url:
+            pdf_source_html = f'''
+            <div style="margin-top:12px;padding:12px 16px;background:#1a0a0a;border-radius:8px;border:1px solid #dc262620;">
+                <p style="color:#dc2626;font-size:10px;margin:0 0 4px 0;text-transform:uppercase;letter-spacing:1px;font-weight:600;">
+                    Parsed from PDF Document
+                </p>
+                <a href="{pdf_url}" style="color:#f87171;font-size:11px;text-decoration:none;word-break:break-all;">
+                    {pdf_url[:80]}{'...' if len(pdf_url) > 80 else ''}
+                </a>
+            </div>
+            '''
+        
         return f'''
-        <div style="background:#0a0a0a;border-radius:12px;padding:28px;margin-bottom:16px;border:1px solid #1a1a1a;border-left:3px solid #fff;">
+        <div style="background:#0a0a0a;border-radius:12px;padding:28px;margin-bottom:16px;border:1px solid #1a1a1a;border-left:3px solid {'#dc2626' if is_pdf else '#fff'};">
             <div style="margin-bottom:20px;">
                 <span style="background:#fff;color:#000;padding:6px 16px;border-radius:100px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">
                     {event_type}
                 </span>
+                {pdf_badge}
             </div>
             <h3 style="color:#fff;margin:0 0 12px 0;font-size:22px;font-weight:600;line-height:1.3;">{event.get('title', 'N/A')}</h3>
             <p style="color:#666;font-size:14px;margin:0 0 16px 0;text-transform:uppercase;letter-spacing:0.5px;">{event.get('company', 'Unknown Company')}</p>
@@ -400,6 +426,7 @@ def generate_html_brief(events: List[Dict], run: Dict) -> str:
             </div>
             
             {quotes_html}
+            {pdf_source_html}
             
             <div style="margin-top:20px;padding-top:20px;border-top:1px solid #222;">
                 <a href="{event.get('source_url', '#')}" style="color:#fff;font-size:12px;text-decoration:none;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">
