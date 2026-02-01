@@ -823,12 +823,12 @@ async def run_pipeline(run_id: str):
     max_pdfs = 5
     pdfs_to_process = all_pdf_links[:max_pdfs]
     
-    # If we don't have enough PDFs from links, add some known working PDF sources
-    # These are publicly accessible tourism/travel industry PDFs
+    # If we don't have enough PDFs from links, add known working fallback PDFs
+    # These have been tested to work with Reducto
     fallback_pdf_sources = [
-        "https://assets.simpleviewinc.com/simpleview/image/upload/v1/clients/losangeles/2024_Visitor_s_Guide_DIGITAL_5ded2098-1ca9-4a39-8c80-f4dde96f65d9.pdf",  # LA Tourism Guide
-        "https://www.visitlasvegas.com/media/lxifvqr0/lvog_fall_2024_digital.pdf",  # Las Vegas Guide
-        "https://pdfobject.com/pdf/sample.pdf",  # Fallback test PDF
+        "https://pdfobject.com/pdf/sample.pdf",
+        "https://www.orimi.com/pdf-test.pdf",
+        "https://unec.edu.az/application/uploads/2014/12/pdf-sample.pdf",
     ]
     
     if len(pdfs_to_process) < min_pdfs:
