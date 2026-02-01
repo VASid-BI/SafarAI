@@ -514,13 +514,23 @@ async def run_pipeline(run_id: str):
                 # Use Reducto for PDF parsing
                 await log_run(run_id, "info", f"Processing PDF with Reducto: {source_name}")
                 try:
+                    # Use Reducto's parse.run method with document_url
                     pdf_result = await asyncio.to_thread(
-                        reducto_client.parse,
+                        reducto_client.parse.run,
                         document_url=source_url
                     )
-                    markdown = pdf_result.to_markdown() if hasattr(pdf_result, 'to_markdown') else str(pdf_result)
+                    
+                    # Extract text from chunks
+                    markdown_parts = []
+                    if hasattr(pdf_result, 'result') and hasattr(pdf_result.result, 'chunks'):
+                        for chunk in pdf_result.result.chunks:
+                            if hasattr(chunk, 'content'):
+                                markdown_parts.append(chunk.content)
+                    markdown = '\n\n'.join(markdown_parts) if markdown_parts else str(pdf_result)
+                    
                     title = source_name
                     links = []
+                    await log_run(run_id, "info", f"Successfully parsed PDF with Reducto: {len(markdown)} chars")
                 except Exception as pdf_error:
                     await log_run(run_id, "warn", f"PDF parsing failed, trying Firecrawl: {pdf_error}")
                     # Fallback to Firecrawl for PDFs
