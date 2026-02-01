@@ -500,6 +500,10 @@ def generate_html_brief(events: List[Dict], run: Dict) -> str:
                     <p style="color:#fff;font-size:36px;font-weight:700;margin:0;font-family:monospace;">{high_priority}</p>
                     <p style="color:#555;font-size:10px;margin:8px 0 0 0;text-transform:uppercase;letter-spacing:1px;">High Priority</p>
                 </div>
+                <div style="flex:1;padding:32px;text-align:center;border-right:1px solid #1a1a1a;">
+                    <p style="color:#dc2626;font-size:36px;font-weight:700;margin:0;font-family:monospace;">{pdf_sourced}</p>
+                    <p style="color:#555;font-size:10px;margin:8px 0 0 0;text-transform:uppercase;letter-spacing:1px;">From PDFs</p>
+                </div>
                 <div style="flex:1;padding:32px;text-align:center;">
                     <p style="color:#fff;font-size:36px;font-weight:700;margin:0;font-family:monospace;">{run.get('sources_ok', 0)}/{run.get('sources_total', 0)}</p>
                     <p style="color:#555;font-size:10px;margin:8px 0 0 0;text-transform:uppercase;letter-spacing:1px;">Sources</p>
@@ -508,6 +512,7 @@ def generate_html_brief(events: List[Dict], run: Dict) -> str:
             
             <!-- Main Content -->
             <div style="padding:48px 40px;">
+                {section("PDF Intelligence", pdf_events) if pdf_events else ""}
                 {section("Top Movers", top_movers)}
                 {section("Partnerships", partnerships)}
                 {section("Funding", funding)}
