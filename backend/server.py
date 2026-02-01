@@ -823,11 +823,12 @@ async def run_pipeline(run_id: str):
     max_pdfs = 5
     pdfs_to_process = all_pdf_links[:max_pdfs]
     
-    # If we don't have enough PDFs from links, add some known tourism PDF sources
-    # These are publicly accessible PDFs from major travel organizations
+    # If we don't have enough PDFs from links, add some known working PDF sources
+    # These are publicly accessible tourism/travel industry PDFs
     fallback_pdf_sources = [
-        "https://www.sec.gov/Archives/edgar/data/1048286/000104828624000007/h-12312023.pdf",  # Hyatt Annual Report
-        "https://www.sec.gov/Archives/edgar/data/1585689/000158568924000012/abnb-20231231.pdf",  # Airbnb Annual Report
+        "https://assets.simpleviewinc.com/simpleview/image/upload/v1/clients/losangeles/2024_Visitor_s_Guide_DIGITAL_5ded2098-1ca9-4a39-8c80-f4dde96f65d9.pdf",  # LA Tourism Guide
+        "https://www.visitlasvegas.com/media/lxifvqr0/lvog_fall_2024_digital.pdf",  # Las Vegas Guide
+        "https://pdfobject.com/pdf/sample.pdf",  # Fallback test PDF
     ]
     
     if len(pdfs_to_process) < min_pdfs:
