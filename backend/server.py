@@ -1042,6 +1042,277 @@ async def get_trends(run_id: Optional[str] = None):
     trends = await db.trend_forecasts.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
     return {"trends": trends}
 
+# ========================
+# BRIEFS ARCHIVE ENDPOINTS
+# ========================
+
+@api_router.get("/briefs")
+async def list_briefs(limit: int = 50):
+    """Get all historical briefs"""
+    briefs = await db.briefs.find({}, {"_id": 0, "html": 0}).sort("created_at", -1).to_list(limit)
+    return {"briefs": briefs}
+
+@api_router.get("/brief/{brief_id}")
+async def get_brief_by_id(brief_id: str):
+    """Get a specific brief by ID"""
+    brief = await db.briefs.find_one({"id": brief_id}, {"_id": 0})
+    if not brief:
+        raise HTTPException(status_code=404, detail="Brief not found")
+    return brief
+
+@api_router.get("/brief/{brief_id}/pdf")
+async def export_brief_to_pdf(brief_id: str):
+    """Export brief to PDF"""
+    try:
+        # Get brief
+        brief = await db.briefs.find_one({"id": brief_id}, {"_id": 0})
+        if not brief:
+            raise HTTPException(status_code=404, detail="Brief not found")
+        
+        # Use weasyprint or return HTML for client-side PDF
+        # For now, return HTML that can be printed/saved as PDF
+        html_content = brief.get('html', '')
+        
+        # Create a downloadable PDF using reportlab
+        from reportlab.lib.pagesizes import letter
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.units import inch
+        from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+        
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
+        styles = getSampleStyleSheet()
+        story = []
+        
+        # Title
+        title_style = styles['Heading1']
+        story.append(Paragraph("SafarAI Intelligence Brief", title_style))
+        story.append(Spacer(1, 12))
+        
+        # Date
+        date_str = brief.get('created_at', 'Unknown')
+        story.append(Paragraph(f"Generated: {date_str}", styles['Normal']))
+        story.append(Spacer(1, 24))
+        
+        # Events
+        events = brief.get('events', [])
+        for event in events[:20]:
+            event_type = event.get('event_type', 'other').replace('_', ' ').upper()
+            story.append(Paragraph(f"<b>[{event_type}]</b> {event.get('title', 'N/A')}", styles['Heading3']))
+            story.append(Paragraph(f"Company: {event.get('company', 'Unknown')}", styles['Normal']))
+            story.append(Paragraph(f"{event.get('summary', '')}", styles['Normal']))
+            story.append(Paragraph(f"<i>Why it matters:</i> {event.get('why_it_matters', '')}", styles['Normal']))
+            story.append(Spacer(1, 12))
+        
+        doc.build(story)
+        buffer.seek(0)
+        
+        return StreamingResponse(
+            buffer,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=intel-brief-{brief_id[:8]}.pdf"}
+        )
+        
+    except Exception as e:
+        logger.error(f"PDF export error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")
+
+# ========================
+# SCHEDULED RUNS ENDPOINTS
+# ========================
+
+# Global scheduler state
+scheduler_running = False
+scheduler_task = None
+
+async def check_scheduled_runs():
+    """Background task to check and execute scheduled runs"""
+    global scheduler_running
+    while scheduler_running:
+        try:
+            now = datetime.now(timezone.utc)
+            schedules = await db.scheduled_runs.find({"enabled": True}, {"_id": 0}).to_list(100)
+            
+            for schedule in schedules:
+                next_run = schedule.get('next_run_at')
+                if next_run:
+                    next_run_dt = datetime.fromisoformat(next_run.replace('Z', '+00:00')) if isinstance(next_run, str) else next_run
+                    if now >= next_run_dt:
+                        # Execute run
+                        run = Run()
+                        run_doc = run.model_dump()
+                        run_doc['started_at'] = run_doc['started_at'].isoformat()
+                        run_doc['scheduled_run_id'] = schedule['id']
+                        await db.runs.insert_one(run_doc)
+                        
+                        # Run pipeline in background
+                        asyncio.create_task(run_pipeline(run.id))
+                        
+                        # Calculate next run time
+                        from croniter import croniter
+                        cron = croniter(schedule['cron_expression'], now)
+                        next_time = cron.get_next(datetime)
+                        
+                        await db.scheduled_runs.update_one(
+                            {"id": schedule['id']},
+                            {"$set": {
+                                "last_run_at": now.isoformat(),
+                                "next_run_at": next_time.isoformat()
+                            }}
+                        )
+                        logger.info(f"Scheduled run executed: {schedule['name']}")
+            
+            await asyncio.sleep(60)  # Check every minute
+            
+        except Exception as e:
+            logger.error(f"Scheduler error: {e}")
+            await asyncio.sleep(60)
+
+@api_router.get("/schedules")
+async def list_schedules():
+    """Get all scheduled runs"""
+    schedules = await db.scheduled_runs.find({}, {"_id": 0}).to_list(100)
+    return {"schedules": schedules}
+
+@api_router.post("/schedules")
+async def create_schedule(schedule_data: ScheduledRunCreate):
+    """Create a new scheduled run"""
+    try:
+        from croniter import croniter
+        
+        # Validate cron expression
+        now = datetime.now(timezone.utc)
+        cron = croniter(schedule_data.cron_expression, now)
+        next_run = cron.get_next(datetime)
+        
+        schedule = ScheduledRun(
+            cron_expression=schedule_data.cron_expression,
+            name=schedule_data.name,
+            enabled=schedule_data.enabled,
+            next_run_at=next_run
+        )
+        
+        doc = schedule.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        doc['next_run_at'] = doc['next_run_at'].isoformat() if doc['next_run_at'] else None
+        
+        await db.scheduled_runs.insert_one(doc)
+        
+        return {"message": "Schedule created", "schedule": doc}
+        
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid cron expression: {str(e)}")
+
+@api_router.patch("/schedules/{schedule_id}")
+async def update_schedule(schedule_id: str, enabled: bool):
+    """Enable or disable a scheduled run"""
+    result = await db.scheduled_runs.update_one(
+        {"id": schedule_id},
+        {"$set": {"enabled": enabled}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    return {"message": f"Schedule {'enabled' if enabled else 'disabled'}"}
+
+@api_router.delete("/schedules/{schedule_id}")
+async def delete_schedule(schedule_id: str):
+    """Delete a scheduled run"""
+    result = await db.scheduled_runs.delete_one({"id": schedule_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    return {"message": "Schedule deleted"}
+
+# ========================
+# SOURCE HEALTH MONITORING
+# ========================
+
+@api_router.get("/sources/health")
+async def get_sources_health():
+    """Get health metrics for all sources"""
+    sources = await db.sources.find({}, {"_id": 0}).to_list(100)
+    health_data = []
+    
+    for source in sources:
+        # Get source run history
+        source_logs = await db.source_health.find(
+            {"source_id": source['id']},
+            {"_id": 0}
+        ).sort("checked_at", -1).to_list(100)
+        
+        total = len(source_logs)
+        successes = len([l for l in source_logs if l.get('success')])
+        failures = total - successes
+        
+        last_success = next((l for l in source_logs if l.get('success')), None)
+        last_failure = next((l for l in source_logs if not l.get('success')), None)
+        
+        avg_response_time = 0
+        if source_logs:
+            response_times = [l.get('response_time_ms', 0) for l in source_logs if l.get('response_time_ms')]
+            avg_response_time = sum(response_times) / len(response_times) if response_times else 0
+        
+        health_data.append(SourceHealth(
+            source_id=source['id'],
+            source_name=source['name'],
+            total_runs=total,
+            successful_runs=successes,
+            failed_runs=failures,
+            success_rate=(successes / total * 100) if total > 0 else 0,
+            avg_response_time_ms=avg_response_time,
+            last_success_at=last_success.get('checked_at') if last_success else None,
+            last_failure_at=last_failure.get('checked_at') if last_failure else None,
+            last_error=last_failure.get('error') if last_failure else None
+        ).model_dump())
+    
+    return {"health": health_data}
+
+# ========================
+# EMAIL CONFIGURATION
+# ========================
+
+@api_router.get("/email/config")
+async def get_email_config():
+    """Get current email configuration"""
+    from_email = os.environ.get('SAFARAI_FROM_EMAIL', 'onboarding@resend.dev')
+    recipients = os.environ.get('SAFARAI_RECIPIENTS', '').split(',')
+    recipients = [r.strip() for r in recipients if r.strip()]
+    
+    return {
+        "from_email": from_email,
+        "recipients": recipients,
+        "domain_verified": "kirikomal.com" in from_email
+    }
+
+@api_router.post("/email/test")
+async def send_test_email():
+    """Send a test email to verify configuration"""
+    try:
+        recipients = os.environ.get('SAFARAI_RECIPIENTS', '').split(',')
+        recipients = [r.strip() for r in recipients if r.strip()]
+        
+        if not recipients:
+            raise HTTPException(status_code=400, detail="No recipients configured")
+        
+        params = {
+            "from": os.environ.get('SAFARAI_FROM_EMAIL', 'onboarding@resend.dev'),
+            "to": recipients,
+            "subject": "SafarAI Test Email",
+            "html": """
+            <div style="font-family: sans-serif; padding: 20px;">
+                <h1>SafarAI Email Test</h1>
+                <p>This is a test email from your SafarAI Intelligence Platform.</p>
+                <p>If you received this, your email configuration is working correctly.</p>
+            </div>
+            """
+        }
+        
+        email = await asyncio.to_thread(resend.Emails.send, params)
+        return {"message": "Test email sent", "email_id": email.get('id')}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send test email: {str(e)}")
+
 # Include router
 app.include_router(api_router)
 
