@@ -1033,11 +1033,10 @@ function App() {
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/insights" element={<InsightsPage />} />
-              <Route path="/action-items" element={<ActionItemsPage />} />
-              <Route path="/approvals" element={<ApprovalsPage />} />
               <Route path="/trends" element={<TrendsPage />} />
               <Route path="/sources" element={<Sources />} />
               <Route path="/brief" element={<Brief />} />
+              <Route path="/briefs-archive" element={<BriefsArchive />} />
               <Route path="/runs" element={<Runs />} />
               <Route path="/logs" element={<Logs />} />
             </Routes>
