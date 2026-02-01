@@ -235,6 +235,54 @@ async def log_run(run_id: str, level: str, message: str, meta: dict = None):
     else:
         logger.info(f"[{run_id}] {message}")
 
+async def process_pdf_with_reducto(pdf_url: str, run_id: str) -> Optional[Dict]:
+    """
+    Process a PDF using Reducto and return extracted content.
+    Returns dict with markdown content and metadata, or None if failed.
+    """
+    try:
+        await log_run(run_id, "info", f"Processing PDF with Reducto: {pdf_url}")
+        
+        pdf_result = await asyncio.to_thread(
+            reducto_client.parse.run,
+            input=pdf_url
+        )
+        
+        # Extract text from chunks
+        markdown_parts = []
+        tables_found = 0
+        figures_found = 0
+        
+        if hasattr(pdf_result, 'result') and hasattr(pdf_result.result, 'chunks'):
+            for chunk in pdf_result.result.chunks:
+                if hasattr(chunk, 'content'):
+                    markdown_parts.append(chunk.content)
+                if hasattr(chunk, 'chunk_type'):
+                    if chunk.chunk_type == 'table':
+                        tables_found += 1
+                    elif chunk.chunk_type == 'figure':
+                        figures_found += 1
+        
+        markdown = '\n\n'.join(markdown_parts) if markdown_parts else str(pdf_result)
+        
+        if len(markdown) < 100:
+            await log_run(run_id, "warn", f"PDF content too short ({len(markdown)} chars): {pdf_url}")
+            return None
+        
+        await log_run(run_id, "info", f"Successfully parsed PDF: {len(markdown)} chars, {tables_found} tables, {figures_found} figures")
+        
+        return {
+            "markdown": markdown,
+            "url": pdf_url,
+            "tables_count": tables_found,
+            "figures_count": figures_found,
+            "is_pdf": True
+        }
+        
+    except Exception as e:
+        await log_run(run_id, "warn", f"Failed to parse PDF with Reducto: {pdf_url} - {str(e)}")
+        return None
+
 # ========================
 # LLM CLASSIFICATION
 # ========================
