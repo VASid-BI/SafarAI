@@ -193,6 +193,38 @@ def filter_link(url: str) -> bool:
         return False
     return any(kw in url_lower for kw in KEYWORDS)
 
+def is_pdf_link(url: str) -> bool:
+    """Check if URL points to a PDF file."""
+    url_lower = url.lower()
+    return url_lower.endswith('.pdf') or '/pdf/' in url_lower or 'pdf=' in url_lower
+
+def extract_pdf_links(markdown_content: str, links: List[str], base_url: str) -> List[str]:
+    """Extract PDF links from page content and links list."""
+    import re
+    pdf_links = []
+    
+    # Check existing links for PDFs
+    for link in links:
+        if is_pdf_link(link):
+            if link not in pdf_links:
+                pdf_links.append(link)
+    
+    # Also search markdown content for PDF URLs
+    pdf_patterns = [
+        r'https?://[^\s\)\]"\']+\.pdf(?:\?[^\s\)\]"\']*)?',
+        r'href=["\']([^"\']+\.pdf[^"\']*)["\']',
+        r'\[([^\]]+)\]\(([^)]+\.pdf[^)]*)\)'
+    ]
+    
+    for pattern in pdf_patterns:
+        matches = re.findall(pattern, markdown_content, re.IGNORECASE)
+        for match in matches:
+            url = match if isinstance(match, str) else (match[1] if len(match) > 1 else match[0])
+            if url and url.startswith('http') and url not in pdf_links:
+                pdf_links.append(url)
+    
+    return pdf_links[:10]  # Limit to 10 PDF links per source
+
 async def log_run(run_id: str, level: str, message: str, meta: dict = None):
     log = RunLog(run_id=run_id, level=level, message=message, meta=meta or {})
     doc = log.model_dump()
