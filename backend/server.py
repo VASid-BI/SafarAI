@@ -1123,10 +1123,10 @@ async def process_pdf_with_reducto(request: PDFProcessRequest, background_tasks:
     try:
         await log_run("pdf-process", "info", f"Starting PDF processing: {request.url}")
         
-        # Use Reducto to parse the PDF
+        # Use Reducto to parse the PDF - input should be URL string directly
         pdf_result = await asyncio.to_thread(
             reducto_client.parse.run,
-            document_url=request.url
+            input=request.url
         )
         
         # Extract content from chunks
