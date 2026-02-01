@@ -824,9 +824,10 @@ async def run_pipeline(run_id: str):
     pdfs_to_process = all_pdf_links[:max_pdfs]
     
     # If we don't have enough PDFs from links, add some known tourism PDF sources
+    # These are publicly accessible PDFs from major travel organizations
     fallback_pdf_sources = [
-        "https://www.unwto.org/sites/default/files/2024-01/barometer-january2024-en.pdf",
-        "https://www.wttc.org/-/media/files/reports/economic-impact-research/regions-2023/world2023.pdf"
+        "https://www.sec.gov/Archives/edgar/data/1048286/000104828624000007/h-12312023.pdf",  # Hyatt Annual Report
+        "https://www.sec.gov/Archives/edgar/data/1585689/000158568924000012/abnb-20231231.pdf",  # Airbnb Annual Report
     ]
     
     if len(pdfs_to_process) < min_pdfs:
