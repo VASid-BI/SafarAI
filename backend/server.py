@@ -1294,7 +1294,7 @@ class PDFProcessRequest(BaseModel):
     name: Optional[str] = "PDF Document"
 
 @api_router.post("/process-pdf")
-async def process_pdf_with_reducto(request: PDFProcessRequest, background_tasks: BackgroundTasks):
+async def process_pdf_endpoint(request: PDFProcessRequest, background_tasks: BackgroundTasks):
     """
     Process a PDF document using Reducto AI.
     This extracts text, tables, and figures from investor relations PDFs or any PDF URL.
