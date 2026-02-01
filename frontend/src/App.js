@@ -277,7 +277,6 @@ const Sidebar = () => {
     { path: "/trends", label: "Trends", icon: TrendingUp },
     { path: "/sources", label: "Sources", icon: Database },
     { path: "/brief", label: "Intel Brief", icon: FileText },
-    { path: "/briefs-archive", label: "Brief Archive", icon: Clock },
     { path: "/runs", label: "Metrics", icon: BarChart3 },
     { path: "/logs", label: "Logs", icon: Terminal },
   ];
@@ -287,7 +286,7 @@ const Sidebar = () => {
       <div className="p-8 border-b border-white/5">
         <div className="flex items-center gap-4">
           <div className="relative">
-            <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
               <GlobeIcon size={24} className="text-black" />
             </div>
           </div>
