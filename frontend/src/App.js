@@ -773,17 +773,40 @@ const Brief = () => {
     );
   };
   
+  const exportToPDF = async () => {
+    try {
+      toast.info("Generating PDF...");
+      const response = await axios.get(`${API}/brief/${brief.id}/pdf`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `intel-brief-${new Date().toISOString().split('T')[0]}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success("PDF downloaded successfully");
+    } catch (e) {
+      toast.error("Failed to export PDF", { description: e.response?.data?.detail || "Try again later" });
+    }
+  };
+
   return (
     <div className="space-y-8 noise-bg" data-testid="brief-page">
       <ScrollReveal>
-        <div>
-          <span className="badge-bw badge-white mb-4 inline-block">Latest Brief</span>
-          <h1 className="text-4xl font-bold tracking-tight">
-            <TextReveal>Executive Intelligence Brief</TextReveal>
-          </h1>
-          <p className="text-white/40 mt-2">
-            Generated: {brief.created_at ? new Date(brief.created_at).toLocaleString() : "Unknown"}
-          </p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <span className="badge-bw badge-white mb-4 inline-block">Latest Brief</span>
+            <h1 className="text-4xl font-bold tracking-tight">
+              <TextReveal>Executive Intelligence Brief</TextReveal>
+            </h1>
+            <p className="text-white/40 mt-2">
+              Generated: {brief.created_at ? new Date(brief.created_at).toLocaleString() : "Unknown"}
+            </p>
+          </div>
+          <button onClick={exportToPDF} className="btn-outline-bw flex items-center gap-2" data-testid="export-pdf-btn">
+            <Download size={14} />
+            Export PDF
+          </button>
         </div>
       </ScrollReveal>
       
@@ -791,6 +814,174 @@ const Brief = () => {
       <Section title="Partnerships" events={partnerships} />
       <Section title="Funding" events={funding} />
       <Section title="Campaigns and Deals" events={campaigns} />
+    </div>
+  );
+};
+
+// ========================
+// BRIEFS ARCHIVE PAGE
+// ========================
+const BriefsArchive = () => {
+  const [briefs, setBriefs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedBrief, setSelectedBrief] = useState(null);
+  
+  useEffect(() => {
+    const fetchBriefs = async () => {
+      try {
+        const response = await axios.get(`${API}/briefs`);
+        setBriefs(response.data.briefs || []);
+      } catch (e) {
+        console.error("Failed to fetch briefs:", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBriefs();
+  }, []);
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="animate-spin text-white" size={32} />
+      </div>
+    );
+  }
+  
+  return (
+    <div className="space-y-8 noise-bg" data-testid="briefs-archive-page">
+      <ScrollReveal>
+        <div>
+          <span className="badge-bw badge-outline mb-4 inline-block">
+            <Archive size={12} /> Historical Data
+          </span>
+          <h1 className="text-4xl font-bold tracking-tight">
+            <TextReveal>Brief Archive</TextReveal>
+          </h1>
+          <p className="text-white/40 mt-2">
+            Access historical intelligence briefs
+          </p>
+        </div>
+      </ScrollReveal>
+      
+      {briefs.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center spotlight-card p-12">
+          <Archive className="mb-4 text-white/20" size={64} />
+          <h2 className="text-2xl font-bold mb-2">No Briefs Archived</h2>
+          <p className="text-white/40">Run the pipeline to generate intelligence briefs</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Briefs List */}
+          <div className="lg:col-span-1 space-y-3">
+            {briefs.map((brief) => (
+              <div 
+                key={brief.id}
+                onClick={() => setSelectedBrief(brief)}
+                className={`spotlight-card p-4 cursor-pointer transition-all hover:bg-white/[0.03] ${
+                  selectedBrief?.id === brief.id ? 'ring-1 ring-white/20' : ''
+                }`}
+                data-testid={`brief-card-${brief.id}`}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <Calendar size={14} className="text-white/40" />
+                  <span className="text-sm text-white/60">
+                    {new Date(brief.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <p className="text-lg font-medium text-white">
+                  {brief.events?.length || 0} Events
+                </p>
+                <p className="text-xs text-white/30 mt-1">
+                  {new Date(brief.created_at).toLocaleTimeString()}
+                </p>
+              </div>
+            ))}
+          </div>
+          
+          {/* Brief Preview */}
+          <div className="lg:col-span-2">
+            {selectedBrief ? (
+              <div className="spotlight-card p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-xl font-bold">Brief Details</h3>
+                    <p className="text-sm text-white/40">
+                      {new Date(selectedBrief.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                  <button 
+                    onClick={async () => {
+                      try {
+                        toast.info("Generating PDF...");
+                        const response = await axios.get(`${API}/brief/${selectedBrief.id}/pdf`, { responseType: 'blob' });
+                        const url = window.URL.createObjectURL(new Blob([response.data]));
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.setAttribute('download', `intel-brief-${selectedBrief.created_at.split('T')[0]}.pdf`);
+                        document.body.appendChild(link);
+                        link.click();
+                        link.remove();
+                        toast.success("PDF downloaded");
+                      } catch (e) {
+                        toast.error("Failed to export PDF");
+                      }
+                    }}
+                    className="btn-outline-bw flex items-center gap-2"
+                  >
+                    <Download size={14} />
+                    Export
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                  <div className="p-3 rounded-lg bg-white/5 text-center">
+                    <p className="text-2xl font-bold text-white">{selectedBrief.events?.length || 0}</p>
+                    <p className="text-xs text-white/40">Total Events</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-white/5 text-center">
+                    <p className="text-2xl font-bold text-white">
+                      {selectedBrief.events?.filter(e => e.materiality_score >= 70).length || 0}
+                    </p>
+                    <p className="text-xs text-white/40">High Priority</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-white/5 text-center">
+                    <p className="text-2xl font-bold text-white">
+                      {selectedBrief.events?.filter(e => e.event_type === 'partnership').length || 0}
+                    </p>
+                    <p className="text-xs text-white/40">Partnerships</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-white/5 text-center">
+                    <p className="text-2xl font-bold text-white">
+                      {selectedBrief.events?.filter(e => e.event_type === 'funding').length || 0}
+                    </p>
+                    <p className="text-xs text-white/40">Funding</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                  {selectedBrief.events?.slice(0, 10).map((event, i) => (
+                    <div key={i} className="p-4 rounded-lg bg-white/[0.02] border border-white/5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="badge-bw badge-outline text-xs">
+                          {event.event_type?.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <h4 className="font-medium text-white mb-1">{event.title}</h4>
+                      <p className="text-xs text-white/50">{event.company}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="spotlight-card p-12 text-center">
+                <FileText className="mx-auto mb-4 text-white/20" size={48} />
+                <p className="text-white/40">Select a brief to view details</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
