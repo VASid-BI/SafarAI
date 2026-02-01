@@ -274,11 +274,10 @@ const Sidebar = () => {
   const navItems = [
     { path: "/", label: "Dashboard", icon: Activity },
     { path: "/insights", label: "Insights", icon: Brain },
-    { path: "/action-items", label: "Tasks", icon: CheckCircle2 },
-    { path: "/approvals", label: "Approvals", icon: Shield },
     { path: "/trends", label: "Trends", icon: TrendingUp },
     { path: "/sources", label: "Sources", icon: Database },
     { path: "/brief", label: "Intel Brief", icon: FileText },
+    { path: "/briefs-archive", label: "Brief Archive", icon: Clock },
     { path: "/runs", label: "Metrics", icon: BarChart3 },
     { path: "/logs", label: "Logs", icon: Terminal },
   ];
