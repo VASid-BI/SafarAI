@@ -1253,6 +1253,9 @@ async def create_schedule(schedule_data: ScheduledRunCreate):
         
         await db.scheduled_runs.insert_one(doc)
         
+        # Remove _id before returning
+        doc.pop('_id', None)
+        
         return {"message": "Schedule created", "schedule": doc}
         
     except Exception as e:
