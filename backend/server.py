@@ -1107,7 +1107,100 @@ async def get_trends(run_id: Optional[str] = None):
     return {"trends": trends}
 
 # ========================
-# BRIEFS ARCHIVE ENDPOINTS
+# REDUCTO PDF PROCESSING
+# ========================
+
+class PDFProcessRequest(BaseModel):
+    url: str
+    name: Optional[str] = "PDF Document"
+
+@api_router.post("/process-pdf")
+async def process_pdf_with_reducto(request: PDFProcessRequest, background_tasks: BackgroundTasks):
+    """
+    Process a PDF document using Reducto AI.
+    This extracts text, tables, and figures from investor relations PDFs or any PDF URL.
+    """
+    try:
+        await log_run("pdf-process", "info", f"Starting PDF processing: {request.url}")
+        
+        # Use Reducto to parse the PDF
+        pdf_result = await asyncio.to_thread(
+            reducto_client.parse.run,
+            document_url=request.url
+        )
+        
+        # Extract content from chunks
+        extracted_content = []
+        tables = []
+        figures = []
+        
+        if hasattr(pdf_result, 'result') and hasattr(pdf_result.result, 'chunks'):
+            for chunk in pdf_result.result.chunks:
+                if hasattr(chunk, 'content'):
+                    extracted_content.append(chunk.content)
+                if hasattr(chunk, 'chunk_type'):
+                    if chunk.chunk_type == 'table':
+                        tables.append(chunk.content)
+                    elif chunk.chunk_type == 'figure':
+                        figures.append(getattr(chunk, 'embed_url', None))
+        
+        full_text = '\n\n'.join(extracted_content)
+        
+        # Store in items collection
+        item = Item(
+            source_id="reducto-pdf",
+            url=request.url,
+            title=request.name,
+            content_text=full_text[:50000],
+            content_type="pdf",
+            content_hash=compute_hash(full_text)
+        )
+        
+        item_doc = item.model_dump()
+        item_doc['fetched_at'] = item_doc['fetched_at'].isoformat()
+        item_doc['last_seen_at'] = item_doc['last_seen_at'].isoformat()
+        item_doc['tables_count'] = len(tables)
+        item_doc['figures_count'] = len(figures)
+        
+        # Upsert the item
+        await db.items.update_one(
+            {"url": request.url},
+            {"$set": item_doc},
+            upsert=True
+        )
+        
+        await log_run("pdf-process", "info", f"PDF processed successfully: {len(full_text)} chars, {len(tables)} tables")
+        
+        return {
+            "success": True,
+            "message": "PDF processed successfully with Reducto",
+            "document": {
+                "url": request.url,
+                "name": request.name,
+                "text_length": len(full_text),
+                "tables_found": len(tables),
+                "figures_found": len(figures),
+                "preview": full_text[:500] + "..." if len(full_text) > 500 else full_text
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"PDF processing error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to process PDF: {str(e)}")
+
+@api_router.get("/reducto/status")
+async def get_reducto_status():
+    """Check Reducto API status and configuration"""
+    api_key = os.environ.get('REDUCTO_API_KEY', '')
+    return {
+        "configured": bool(api_key and len(api_key) > 10),
+        "key_prefix": api_key[:8] + "..." if api_key else "Not configured",
+        "supported_formats": ["PDF", "DOCX", "PPTX", "Images"],
+        "features": ["Text Extraction", "Table Detection", "Figure Extraction", "OCR"]
+    }
+
+# ========================
+# BRIEFS ENDPOINTS
 # ========================
 
 @api_router.get("/briefs")
