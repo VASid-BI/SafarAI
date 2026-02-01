@@ -380,7 +380,7 @@ def generate_html_brief(events: List[Dict], run: Dict) -> str:
         # PDF source indicator
         pdf_badge = ""
         if is_pdf:
-            pdf_badge = f'''
+            pdf_badge = '''
             <span style="background:#dc2626;color:#fff;padding:4px 10px;border-radius:100px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-left:8px;">
                 PDF SOURCE
             </span>
