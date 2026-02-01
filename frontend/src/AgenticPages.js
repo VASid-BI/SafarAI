@@ -1,20 +1,17 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { 
-  Brain, CheckCircle2, Clock, AlertTriangle, TrendingUp, 
-  Users, Target, Zap, ArrowRight, ChevronRight, Sparkles,
-  ThumbsUp, ThumbsDown, Loader2, User, Calendar, Flag,
-  BarChart3, Activity, Send, Plus, FileText, Shield
+  Brain, TrendingUp, Target, Zap, ChevronRight, Sparkles,
+  Loader2, BarChart3, Activity, Shield, AlertTriangle,
+  ArrowUpRight, ArrowDownRight, Minus, PieChart, LineChart
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 // ========================
-// INSIGHTS PAGE
+// INSIGHTS PAGE - Redesigned with Better Visualization
 // ========================
 export const InsightsPage = () => {
   const [insights, setInsights] = useState(null);
@@ -77,6 +74,7 @@ export const InsightsPage = () => {
             onClick={generateInsights}
             disabled={generating}
             className="btn-premium-bw flex items-center gap-2"
+            data-testid="generate-insights-btn"
           >
             {generating ? (
               <>
@@ -95,6 +93,11 @@ export const InsightsPage = () => {
     );
   }
 
+  // Calculate stats for visual summary
+  const totalScenarios = insights.impact_scenarios?.length || 0;
+  const criticalAlerts = insights.risk_alerts?.length || 0;
+  const opportunities = insights.opportunities?.length || 0;
+
   return (
     <div className="space-y-6 md:space-y-8 noise-bg w-full" data-testid="insights-page">
       {/* Header */}
@@ -104,7 +107,7 @@ export const InsightsPage = () => {
             <Brain size={12} /> AI Insights
           </span>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-            Agentic Intelligence
+            Intelligence Overview
           </h1>
           <p className="text-white/40 mt-2">
             Generated: {insights.generated_at ? new Date(insights.generated_at).toLocaleString() : "N/A"}
@@ -114,25 +117,63 @@ export const InsightsPage = () => {
           onClick={generateInsights}
           disabled={generating}
           className="btn-outline-bw flex items-center gap-2"
+          data-testid="regenerate-insights-btn"
         >
           {generating ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={14} />}
           Regenerate
         </button>
       </div>
 
-      {/* Key Findings */}
+      {/* Quick Stats - Visual Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="spotlight-card p-5 text-center">
+          <div className="w-12 h-12 mx-auto rounded-xl bg-blue-500/10 flex items-center justify-center mb-3">
+            <BarChart3 size={24} className="text-blue-400" />
+          </div>
+          <p className="text-3xl font-bold text-white">{totalScenarios}</p>
+          <p className="text-xs text-white/40 mt-1">Impact Scenarios</p>
+        </div>
+        <div className="spotlight-card p-5 text-center">
+          <div className="w-12 h-12 mx-auto rounded-xl bg-red-500/10 flex items-center justify-center mb-3">
+            <AlertTriangle size={24} className="text-red-400" />
+          </div>
+          <p className="text-3xl font-bold text-white">{criticalAlerts}</p>
+          <p className="text-xs text-white/40 mt-1">Risk Alerts</p>
+        </div>
+        <div className="spotlight-card p-5 text-center">
+          <div className="w-12 h-12 mx-auto rounded-xl bg-green-500/10 flex items-center justify-center mb-3">
+            <Zap size={24} className="text-green-400" />
+          </div>
+          <p className="text-3xl font-bold text-white">{opportunities}</p>
+          <p className="text-xs text-white/40 mt-1">Opportunities</p>
+        </div>
+        <div className="spotlight-card p-5 text-center">
+          <div className="w-12 h-12 mx-auto rounded-xl bg-purple-500/10 flex items-center justify-center mb-3">
+            <Activity size={24} className="text-purple-400" />
+          </div>
+          <p className="text-3xl font-bold text-white">{insights.processing_time_seconds?.toFixed(0) || 0}s</p>
+          <p className="text-xs text-white/40 mt-1">Analysis Time</p>
+        </div>
+      </div>
+
+      {/* Key Findings - Clean Cards */}
       {insights.key_findings && insights.key_findings.length > 0 && (
         <div className="spotlight-card p-6 md:p-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
               <Target size={20} className="text-white/60" />
             </div>
-            <h2 className="text-xl md:text-2xl font-bold">Key Findings</h2>
+            <div>
+              <h2 className="text-xl md:text-2xl font-bold">Key Findings</h2>
+              <p className="text-xs text-white/40">Top insights from the analysis</p>
+            </div>
           </div>
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {insights.key_findings.map((finding, i) => (
-              <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                <ChevronRight size={20} className="text-white/40 mt-0.5 shrink-0" />
+              <div key={i} className="p-5 rounded-xl bg-gradient-to-br from-white/[0.03] to-transparent border border-white/5 hover:border-white/10 transition-all">
+                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center mb-4">
+                  <span className="text-sm font-bold text-white/60">{i + 1}</span>
+                </div>
                 <p className="text-white/70 text-sm leading-relaxed">{finding}</p>
               </div>
             ))}
@@ -140,19 +181,27 @@ export const InsightsPage = () => {
         </div>
       )}
 
-      {/* Risk Alerts & Opportunities */}
+      {/* Risk Alerts & Opportunities - Side by Side */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         {/* Risk Alerts */}
         {insights.risk_alerts && insights.risk_alerts.length > 0 && (
           <div className="spotlight-card p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <AlertTriangle size={18} className="text-red-400" />
-              <h3 className="text-lg font-semibold">Risk Alerts</h3>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+                <AlertTriangle size={18} className="text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Risk Alerts</h3>
+                <p className="text-xs text-white/40">Potential threats to monitor</p>
+              </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {insights.risk_alerts.map((alert, i) => (
-                <div key={i} className="p-3 rounded-lg bg-red-500/5 border border-red-500/10">
-                  <p className="text-sm text-red-300">{alert}</p>
+                <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-red-500/5 border border-red-500/10">
+                  <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+                    <ArrowDownRight size={12} className="text-red-400" />
+                  </div>
+                  <p className="text-sm text-red-300/80">{alert}</p>
                 </div>
               ))}
             </div>
@@ -162,14 +211,22 @@ export const InsightsPage = () => {
         {/* Opportunities */}
         {insights.opportunities && insights.opportunities.length > 0 && (
           <div className="spotlight-card p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Zap size={18} className="text-green-400" />
-              <h3 className="text-lg font-semibold">Opportunities</h3>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+                <Zap size={18} className="text-green-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Opportunities</h3>
+                <p className="text-xs text-white/40">Potential growth areas</p>
+              </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {insights.opportunities.map((opp, i) => (
-                <div key={i} className="p-3 rounded-lg bg-green-500/5 border border-green-500/10">
-                  <p className="text-sm text-green-300">{opp}</p>
+                <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-green-500/5 border border-green-500/10">
+                  <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
+                    <ArrowUpRight size={12} className="text-green-400" />
+                  </div>
+                  <p className="text-sm text-green-300/80">{opp}</p>
                 </div>
               ))}
             </div>
@@ -177,94 +234,134 @@ export const InsightsPage = () => {
         )}
       </div>
 
-      {/* Impact Scenarios */}
+      {/* Impact Scenarios - Visual Cards */}
       {insights.impact_scenarios && insights.impact_scenarios.length > 0 && (
         <div className="spotlight-card p-6 md:p-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
               <BarChart3 size={20} className="text-white/60" />
             </div>
-            <h2 className="text-xl md:text-2xl font-bold">Impact Scenarios</h2>
+            <div>
+              <h2 className="text-xl md:text-2xl font-bold">Impact Scenarios</h2>
+              <p className="text-xs text-white/40">Potential outcomes and their likelihood</p>
+            </div>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {insights.impact_scenarios.map((scenario, i) => (
-              <div key={i} className="p-5 rounded-xl bg-white/[0.02] border border-white/5 space-y-4">
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="text-lg font-semibold text-white">{scenario.scenario_name}</h3>
-                  <span className={`badge-bw text-xs ${
-                    scenario.impact_level === 'critical' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                    scenario.impact_level === 'high' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
-                    scenario.impact_level === 'medium' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
-                    'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                  }`}>
-                    {scenario.impact_level}
-                  </span>
+          <div className="space-y-4">
+            {insights.impact_scenarios.map((scenario, i) => {
+              const impactColor = {
+                critical: { bg: 'bg-red-500', text: 'text-red-400', border: 'border-red-500/20' },
+                high: { bg: 'bg-orange-500', text: 'text-orange-400', border: 'border-orange-500/20' },
+                medium: { bg: 'bg-yellow-500', text: 'text-yellow-400', border: 'border-yellow-500/20' },
+                low: { bg: 'bg-blue-500', text: 'text-blue-400', border: 'border-blue-500/20' }
+              }[scenario.impact_level] || { bg: 'bg-gray-500', text: 'text-gray-400', border: 'border-gray-500/20' };
+              
+              return (
+                <div key={i} className={`p-5 rounded-xl bg-white/[0.02] border ${impactColor.border} hover:bg-white/[0.03] transition-all`}>
+                  <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                    {/* Scenario Info */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-lg font-semibold text-white">{scenario.scenario_name}</h3>
+                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${impactColor.bg}/10 ${impactColor.text}`}>
+                          {scenario.impact_level}
+                        </span>
+                      </div>
+                      <p className="text-sm text-white/50 leading-relaxed">{scenario.description}</p>
+                    </div>
+                    
+                    {/* Visual Meters */}
+                    <div className="flex lg:flex-col gap-4 lg:gap-3 lg:w-48">
+                      {/* Probability */}
+                      <div className="flex-1 lg:flex-none">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-[10px] text-white/40 uppercase">Probability</span>
+                          <span className="text-xs font-mono text-white/60">{Math.round(scenario.probability * 100)}%</span>
+                        </div>
+                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full ${impactColor.bg} transition-all duration-500`}
+                            style={{ width: `${scenario.probability * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                      {/* Confidence */}
+                      <div className="flex-1 lg:flex-none">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-[10px] text-white/40 uppercase">Confidence</span>
+                          <span className="text-xs font-mono text-white/60">{Math.round(scenario.confidence_score * 100)}%</span>
+                        </div>
+                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-white/30 transition-all duration-500"
+                            style={{ width: `${scenario.confidence_score * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Assumptions - Collapsed by default, cleaner */}
+                  {scenario.assumptions && scenario.assumptions.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-white/5">
+                      <p className="text-[10px] text-white/30 uppercase tracking-wider mb-2">Key Assumptions</p>
+                      <div className="flex flex-wrap gap-2">
+                        {scenario.assumptions.slice(0, 3).map((assumption, j) => (
+                          <span key={j} className="text-xs text-white/40 px-3 py-1 rounded-full bg-white/5">
+                            {assumption.length > 50 ? assumption.slice(0, 50) + '...' : assumption}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <p className="text-sm text-white/60 leading-relaxed">{scenario.description}</p>
-                
-                <div className="flex items-center gap-4 text-xs">
-                  <div className="flex items-center gap-2">
-                    <Activity size={14} className="text-white/40" />
-                    <span className="text-white/50">Probability: {Math.round(scenario.probability * 100)}%</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Shield size={14} className="text-white/40" />
-                    <span className="text-white/50">Confidence: {Math.round(scenario.confidence_score * 100)}%</span>
-                  </div>
-                </div>
-
-                {scenario.assumptions && scenario.assumptions.length > 0 && (
-                  <div className="pt-3 border-t border-white/5">
-                    <p className="text-xs text-white/40 uppercase tracking-wider mb-2">Assumptions</p>
-                    <ul className="space-y-1">
-                      {scenario.assumptions.slice(0, 2).map((assumption, j) => {
-                        return (
-                          <li key={j} className="text-xs text-white/50 flex items-start gap-2">
-                            <span className="text-white/30">•</span>
-                            <span>{assumption}</span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Dashboard Recommendations */}
+      {/* Dashboard Recommendations - Compact Grid */}
       {insights.dashboard_recommendations && insights.dashboard_recommendations.length > 0 && (
         <div className="spotlight-card p-6 md:p-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-              <Activity size={20} className="text-white/60" />
+              <PieChart size={20} className="text-white/60" />
             </div>
-            <h2 className="text-xl md:text-2xl font-bold">Dashboard Recommendations</h2>
+            <div>
+              <h2 className="text-xl md:text-2xl font-bold">Recommended Dashboards</h2>
+              <p className="text-xs text-white/40">Suggested visualizations for your data</p>
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {insights.dashboard_recommendations.map((widget, i) => (
-              <div key={i} className="p-5 rounded-xl bg-white/[0.02] border border-white/5">
-                <div className="flex items-start justify-between mb-3">
-                  <span className={`badge-bw text-xs ${
-                    widget.priority === 'P0' ? 'bg-red-500/10 text-red-400' :
-                    widget.priority === 'P1' ? 'bg-orange-500/10 text-orange-400' :
-                    'bg-blue-500/10 text-blue-400'
-                  }`}>
-                    {widget.priority}
-                  </span>
-                  <span className="text-xs text-white/30 uppercase">{widget.widget_type}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {insights.dashboard_recommendations.map((widget, i) => {
+              const priorityStyle = {
+                P0: 'border-l-red-500',
+                P1: 'border-l-orange-500',
+                P2: 'border-l-blue-500'
+              }[widget.priority] || 'border-l-gray-500';
+              
+              return (
+                <div key={i} className={`p-4 rounded-xl bg-white/[0.02] border border-white/5 border-l-2 ${priorityStyle}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                      widget.priority === 'P0' ? 'bg-red-500/10 text-red-400' :
+                      widget.priority === 'P1' ? 'bg-orange-500/10 text-orange-400' :
+                      'bg-blue-500/10 text-blue-400'
+                    }`}>
+                      {widget.priority}
+                    </span>
+                    <span className="text-[10px] text-white/20 uppercase">{widget.widget_type}</span>
+                  </div>
+                  <h4 className="font-medium text-white mb-1">{widget.title}</h4>
+                  <p className="text-xs text-white/40 leading-relaxed">{widget.description}</p>
                 </div>
-                <h4 className="font-semibold text-white mb-2">{widget.title}</h4>
-                <p className="text-xs text-white/50 leading-relaxed">{widget.description}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Processing Info */}
+      {/* Footer */}
       <div className="flex items-center justify-center gap-6 text-xs text-white/30 py-4">
         <span>Processing time: {insights.processing_time_seconds?.toFixed(1)}s</span>
         <span>•</span>
@@ -275,381 +372,12 @@ export const InsightsPage = () => {
 };
 
 // ========================
-// ACTION ITEMS PAGE
-// ========================
-export const ActionItemsPage = () => {
-  const [actionItems, setActionItems] = useState([]);
-  const [team, setTeam] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all"); // all, pending, in_progress, completed
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const [itemsRes, teamRes] = await Promise.all([
-        axios.get(`${API}/action-items`),
-        axios.get(`${API}/team`)
-      ]);
-      setActionItems(itemsRes.data.action_items || []);
-      setTeam(teamRes.data.team_members || []);
-    } catch (e) {
-      console.error("Failed to fetch action items:", e);
-      toast.error("Failed to load action items");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateStatus = async (itemId, newStatus) => {
-    try {
-      await axios.post(`${API}/action-items/${itemId}/complete`, {
-        status: newStatus
-      });
-      setActionItems(actionItems.map(item => 
-        item.id === itemId ? { ...item, status: newStatus } : item
-      ));
-      toast.success("Task status updated");
-    } catch (e) {
-      toast.error("Failed to update status");
-    }
-  };
-
-  const getTeamMember = (memberId) => {
-    return team.find(m => m.id === memberId);
-  };
-
-  const filteredItems = filter === "all" 
-    ? actionItems 
-    : actionItems.filter(item => item.status === filter);
-
-  const priorityOrder = { P0: 0, P1: 1, P2: 2 };
-  const sortedItems = [...filteredItems].sort((a, b) => 
-    priorityOrder[a.priority] - priorityOrder[b.priority]
-  );
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="animate-spin text-white" size={32} />
-      </div>
-    );
-  }
-
-  const stats = {
-    total: actionItems.length,
-    pending: actionItems.filter(i => i.status === 'pending').length,
-    in_progress: actionItems.filter(i => i.status === 'in_progress').length,
-    completed: actionItems.filter(i => i.status === 'completed').length
-  };
-
-  return (
-    <div className="space-y-6 md:space-y-8 noise-bg w-full" data-testid="action-items-page">
-      {/* Header */}
-      <div>
-        <span className="badge-bw badge-outline mb-4 inline-block">
-          <CheckCircle2 size={12} /> Task Management
-        </span>
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-          Action Items
-        </h1>
-        <p className="text-white/40 mt-2">
-          AI-assigned tasks for your team
-        </p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        {[
-          { label: "Total Tasks", value: stats.total, color: "blue" },
-          { label: "Pending", value: stats.pending, color: "yellow" },
-          { label: "In Progress", value: stats.in_progress, color: "orange" },
-          { label: "Completed", value: stats.completed, color: "green" },
-        ].map((stat, i) => (
-          <div key={i} className="spotlight-card p-4 md:p-6">
-            <p className="stat-number text-3xl md:text-4xl">{stat.value}</p>
-            <p className="text-xs text-white/40 uppercase tracking-wider mt-2">{stat.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {[
-          { label: "All", value: "all" },
-          { label: "Pending", value: "pending" },
-          { label: "In Progress", value: "in_progress" },
-          { label: "Completed", value: "completed" }
-        ].map((f) => (
-          <button
-            key={f.value}
-            onClick={() => setFilter(f.value)}
-            className={`px-4 py-2 rounded-lg text-xs font-medium uppercase tracking-wider transition-all ${
-              filter === f.value
-                ? 'bg-white text-black'
-                : 'bg-white/5 text-white/50 hover:bg-white/10'
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Action Items */}
-      {sortedItems.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <CheckCircle2 className="mb-4 text-white/20" size={48} />
-          <p className="text-white/40">No action items found</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {sortedItems.map((item) => {
-            const assignee = getTeamMember(item.assigned_to);
-            return (
-              <div key={item.id} className="spotlight-card p-5 md:p-6">
-                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className={`badge-bw text-xs ${
-                        item.priority === 'P0' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                        item.priority === 'P1' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
-                        'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                      }`}>
-                        {item.priority}
-                      </span>
-                      <span className={`badge-bw text-xs ${
-                        item.status === 'completed' ? 'badge-success-bw' :
-                        item.status === 'in_progress' ? 'bg-orange-500/10 text-orange-400' :
-                        'badge-outline'
-                      }`}>
-                        {item.status.replace('_', ' ')}
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
-                    <p className="text-sm text-white/60 leading-relaxed mb-4">{item.description}</p>
-                    
-                    {item.reasoning && (
-                      <div className="p-3 rounded-lg bg-white/[0.02] border border-white/5 mb-4">
-                        <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Reasoning</p>
-                        <p className="text-sm text-white/50">{item.reasoning}</p>
-                      </div>
-                    )}
-
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-white/40">
-                      {assignee && (
-                        <div className="flex items-center gap-2">
-                          <User size={14} />
-                          <span>{assignee.name} ({assignee.title})</span>
-                        </div>
-                      )}
-                      {item.due_date && (
-                        <div className="flex items-center gap-2">
-                          <Calendar size={14} />
-                          <span>Due: {new Date(item.due_date).toLocaleDateString()}</span>
-                        </div>
-                      )}
-                      {item.assigned_role && (
-                        <div className="flex items-center gap-2">
-                          <Flag size={14} />
-                          <span className="capitalize">{item.assigned_role}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex md:flex-col gap-2">
-                    {item.status === 'pending' && (
-                      <button
-                        onClick={() => updateStatus(item.id, 'in_progress')}
-                        className="btn-outline-bw text-xs px-4 py-2 flex items-center gap-2 whitespace-nowrap"
-                      >
-                        <Activity size={14} />
-                        Start
-                      </button>
-                    )}
-                    {item.status === 'in_progress' && (
-                      <button
-                        onClick={() => updateStatus(item.id, 'completed')}
-                        className="btn-premium-bw text-xs px-4 py-2 flex items-center gap-2 whitespace-nowrap"
-                      >
-                        <CheckCircle2 size={14} />
-                        Complete
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ========================
-// APPROVALS PAGE
-// ========================
-export const ApprovalsPage = () => {
-  const [approvals, setApprovals] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(null);
-
-  useEffect(() => {
-    fetchApprovals();
-  }, []);
-
-  const fetchApprovals = async () => {
-    try {
-      const response = await axios.get(`${API}/approvals?status=pending`);
-      setApprovals(response.data.approvals || []);
-    } catch (e) {
-      console.error("Failed to fetch approvals:", e);
-      toast.error("Failed to load approvals");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleApprove = async (approvalId) => {
-    try {
-      setProcessing(approvalId);
-      await axios.post(`${API}/approvals/${approvalId}/approve`);
-      toast.success("Action approved and executed");
-      setApprovals(approvals.filter(a => a.id !== approvalId));
-    } catch (e) {
-      toast.error("Failed to approve action", {
-        description: e.response?.data?.detail || "Unknown error"
-      });
-    } finally {
-      setProcessing(null);
-    }
-  };
-
-  const handleReject = async (approvalId) => {
-    try {
-      setProcessing(approvalId);
-      await axios.post(`${API}/approvals/${approvalId}/reject`);
-      toast.success("Action rejected");
-      setApprovals(approvals.filter(a => a.id !== approvalId));
-    } catch (e) {
-      toast.error("Failed to reject action");
-    } finally {
-      setProcessing(null);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="animate-spin text-white" size={32} />
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6 md:space-y-8 noise-bg w-full" data-testid="approvals-page">
-      {/* Header */}
-      <div>
-        <span className="badge-bw badge-outline mb-4 inline-block">
-          <Shield size={12} /> Approval Workflow
-        </span>
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-          Pending Approvals
-        </h1>
-        <p className="text-white/40 mt-2">
-          Review and execute AI-recommended actions
-        </p>
-      </div>
-
-      {/* Approvals */}
-      {approvals.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center spotlight-card p-12">
-          <CheckCircle2 className="mb-4 text-green-400" size={64} />
-          <h2 className="text-2xl font-bold mb-2">All Clear!</h2>
-          <p className="text-white/40">No pending approvals at this time</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {approvals.map((approval) => (
-            <div key={approval.id} className="spotlight-card p-6 md:p-8">
-              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="badge-bw badge-white text-xs">
-                      {approval.action_type.replace('_', ' ')}
-                    </span>
-                    <span className="text-xs text-white/30">
-                      Confidence: {Math.round(approval.confidence * 100)}%
-                    </span>
-                  </div>
-
-                  <h3 className="text-xl font-semibold text-white mb-3">{approval.title}</h3>
-                  <p className="text-sm text-white/60 leading-relaxed mb-4">{approval.description}</p>
-
-                  <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 mb-4">
-                    <p className="text-xs text-white/40 uppercase tracking-wider mb-2">AI Reasoning</p>
-                    <p className="text-sm text-white/50">{approval.reasoning}</p>
-                  </div>
-
-                  {approval.parameters && Object.keys(approval.parameters).length > 0 && (
-                    <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                      <p className="text-xs text-white/40 uppercase tracking-wider mb-2">Parameters</p>
-                      <pre className="text-xs text-white/50 overflow-x-auto">
-                        {JSON.stringify(approval.parameters, null, 2)}
-                      </pre>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex lg:flex-col gap-3">
-                  <button
-                    onClick={() => handleApprove(approval.id)}
-                    disabled={processing === approval.id}
-                    className="btn-premium-bw flex items-center gap-2 whitespace-nowrap"
-                  >
-                    {processing === approval.id ? (
-                      <>
-                        <Loader2 className="animate-spin" size={16} />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <ThumbsUp size={16} />
-                        Approve & Execute
-                      </>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => handleReject(approval.id)}
-                    disabled={processing === approval.id}
-                    className="btn-outline-bw flex items-center gap-2 whitespace-nowrap text-red-400 border-red-500/20 hover:bg-red-500/10"
-                  >
-                    <ThumbsDown size={16} />
-                    Reject
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-6 pt-6 border-t border-white/5 text-xs text-white/30">
-                Created: {new Date(approval.created_at).toLocaleString()}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ========================
-// TRENDS PAGE
+// TRENDS PAGE - Redesigned with Better Visualization
 // ========================
 export const TrendsPage = () => {
   const [trends, setTrends] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   useEffect(() => {
     fetchTrends();
@@ -675,12 +403,40 @@ export const TrendsPage = () => {
     );
   }
 
+  // Category configuration
+  const categories = [
+    { id: 'all', label: 'All Trends', icon: TrendingUp },
+    { id: 'partnerships', label: 'Partnerships', icon: Target, color: 'blue' },
+    { id: 'funding', label: 'Funding', icon: BarChart3, color: 'green' },
+    { id: 'pricing', label: 'Pricing', icon: Activity, color: 'yellow' },
+    { id: 'technology', label: 'Technology', icon: Zap, color: 'purple' },
+    { id: 'destinations', label: 'Destinations', icon: Target, color: 'pink' }
+  ];
+
   const categoryColors = {
-    partnerships: 'blue',
-    funding: 'green',
-    pricing: 'yellow',
-    technology: 'purple',
-    destinations: 'pink'
+    partnerships: { bg: 'bg-blue-500', light: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20' },
+    funding: { bg: 'bg-green-500', light: 'bg-green-500/10', text: 'text-green-400', border: 'border-green-500/20' },
+    pricing: { bg: 'bg-yellow-500', light: 'bg-yellow-500/10', text: 'text-yellow-400', border: 'border-yellow-500/20' },
+    technology: { bg: 'bg-purple-500', light: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/20' },
+    destinations: { bg: 'bg-pink-500', light: 'bg-pink-500/10', text: 'text-pink-400', border: 'border-pink-500/20' }
+  };
+
+  const filteredTrends = selectedCategory === 'all' 
+    ? trends 
+    : trends.filter(t => t.trend_category === selectedCategory);
+
+  // Group trends by category for summary
+  const trendsByCategory = {};
+  trends.forEach(t => {
+    const cat = t.trend_category || 'other';
+    if (!trendsByCategory[cat]) trendsByCategory[cat] = [];
+    trendsByCategory[cat].push(t);
+  });
+
+  const horizonLabels = {
+    next_quarter: 'Next Quarter',
+    next_6_months: 'Next 6 Months',
+    next_year: 'Next Year'
   };
 
   return (
@@ -694,86 +450,173 @@ export const TrendsPage = () => {
           Trend Forecasts
         </h1>
         <p className="text-white/40 mt-2">
-          AI-predicted tourism industry trends
+          AI-predicted tourism industry trends based on event patterns
         </p>
       </div>
 
-      {/* Trends */}
       {trends.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <TrendingUp className="mb-4 text-white/20" size={48} />
-          <p className="text-white/40">No trend forecasts available yet</p>
+        <div className="flex flex-col items-center justify-center py-20 text-center spotlight-card p-12">
+          <TrendingUp className="mb-4 text-white/20" size={64} />
+          <h2 className="text-2xl font-bold mb-2">No Trends Yet</h2>
+          <p className="text-white/40">Run the pipeline to generate trend forecasts</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-          {trends.map((trend) => (
-            <div key={trend.id} className="spotlight-card p-6 md:p-8">
-              <div className="flex items-start justify-between gap-3 mb-4">
-                <span className={`badge-bw text-xs capitalize ${
-                  trend.trend_category === 'partnerships' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
-                  trend.trend_category === 'funding' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
-                  trend.trend_category === 'pricing' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
-                  trend.trend_category === 'technology' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                  'bg-pink-500/10 text-pink-400 border-pink-500/20'
-                }`}>
-                  {trend.trend_category}
-                </span>
-                <span className="text-xs text-white/30 uppercase">{trend.forecast_horizon.replace('_', ' ')}</span>
-              </div>
-
-              <h3 className="text-xl font-semibold text-white mb-3">{trend.trend_name}</h3>
-              <p className="text-sm text-white/60 leading-relaxed mb-4">{trend.description}</p>
-
-              <div className="flex items-center gap-2 mb-4">
-                <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
-                    style={{ width: `${trend.confidence * 100}%` }}
-                  />
-                </div>
-                <span className="text-xs text-white/50 font-mono">{Math.round(trend.confidence * 100)}%</span>
-              </div>
-
-              {trend.potential_impact && (
-                <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 mb-4">
-                  <p className="text-xs text-white/40 uppercase tracking-wider mb-2">Potential Impact</p>
-                  <p className="text-sm text-white/50">{trend.potential_impact}</p>
-                </div>
-              )}
-
-              {trend.key_indicators && trend.key_indicators.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-xs text-white/40 uppercase tracking-wider mb-2">Key Indicators</p>
-                  <div className="flex flex-wrap gap-2">
-                    {trend.key_indicators.map((indicator, i) => {
-                      return (
-                        <span key={i} className="badge-bw badge-outline text-xs">
-                          {indicator}
-                        </span>
-                      );
-                    })}
+        <>
+          {/* Category Overview - Visual Summary */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {Object.entries(trendsByCategory).map(([category, catTrends]) => {
+              const color = categoryColors[category] || { bg: 'bg-gray-500', light: 'bg-gray-500/10', text: 'text-gray-400' };
+              const avgConfidence = catTrends.reduce((sum, t) => sum + (t.confidence || 0), 0) / catTrends.length;
+              
+              return (
+                <div 
+                  key={category} 
+                  className={`spotlight-card p-4 cursor-pointer transition-all hover:scale-[1.02] ${
+                    selectedCategory === category ? 'ring-1 ring-white/20' : ''
+                  }`}
+                  onClick={() => setSelectedCategory(selectedCategory === category ? 'all' : category)}
+                >
+                  <div className={`w-10 h-10 rounded-xl ${color.light} flex items-center justify-center mb-3`}>
+                    <TrendingUp size={18} className={color.text} />
+                  </div>
+                  <p className="text-2xl font-bold text-white">{catTrends.length}</p>
+                  <p className="text-xs text-white/40 capitalize mt-1">{category}</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                      <div className={`h-full ${color.bg}`} style={{ width: `${avgConfidence * 100}%` }} />
+                    </div>
+                    <span className="text-[10px] text-white/30">{Math.round(avgConfidence * 100)}%</span>
                   </div>
                 </div>
-              )}
+              );
+            })}
+          </div>
 
-              {trend.recommended_actions && trend.recommended_actions.length > 0 && (
-                <div>
-                  <p className="text-xs text-white/40 uppercase tracking-wider mb-2">Recommended Actions</p>
-                  <ul className="space-y-2">
-                    {trend.recommended_actions.map((action, i) => {
-                      return (
-                        <li key={i} className="text-sm text-white/50 flex items-start gap-2">
-                          <ArrowRight size={16} className="text-white/30 mt-0.5 shrink-0" />
-                          <span>{action}</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
+          {/* Filter Pills */}
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`px-4 py-2 rounded-full text-xs font-medium transition-all flex items-center gap-2 whitespace-nowrap ${
+                  selectedCategory === cat.id
+                    ? 'bg-white text-black'
+                    : 'bg-white/5 text-white/50 hover:bg-white/10'
+                }`}
+              >
+                <cat.icon size={14} />
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Trends List - Clean Visual Cards */}
+          <div className="space-y-4">
+            {filteredTrends.map((trend) => {
+              const color = categoryColors[trend.trend_category] || categoryColors.partnerships;
+              
+              return (
+                <div key={trend.id} className={`spotlight-card p-6 border-l-2 ${color.border}`}>
+                  {/* Header Row */}
+                  <div className="flex flex-col lg:flex-row lg:items-start gap-4 mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${color.light} ${color.text}`}>
+                          {trend.trend_category}
+                        </span>
+                        <span className="text-xs text-white/30 uppercase">
+                          {horizonLabels[trend.forecast_horizon] || trend.forecast_horizon}
+                        </span>
+                      </div>
+                      <h3 className="text-xl font-semibold text-white">{trend.trend_name}</h3>
+                    </div>
+                    
+                    {/* Confidence Gauge */}
+                    <div className="lg:w-32 text-center">
+                      <div className="relative w-20 h-20 mx-auto">
+                        <svg className="w-20 h-20 transform -rotate-90">
+                          <circle
+                            cx="40"
+                            cy="40"
+                            r="32"
+                            stroke="currentColor"
+                            strokeWidth="6"
+                            fill="transparent"
+                            className="text-white/5"
+                          />
+                          <circle
+                            cx="40"
+                            cy="40"
+                            r="32"
+                            stroke="currentColor"
+                            strokeWidth="6"
+                            fill="transparent"
+                            strokeDasharray={`${trend.confidence * 201} 201`}
+                            className={color.text}
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-lg font-bold text-white">{Math.round(trend.confidence * 100)}%</span>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-white/40 uppercase mt-1">Confidence</p>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-sm text-white/60 leading-relaxed mb-4">{trend.description}</p>
+
+                  {/* Potential Impact */}
+                  {trend.potential_impact && (
+                    <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 mb-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Activity size={14} className="text-white/40" />
+                        <p className="text-xs text-white/40 uppercase font-medium">Potential Impact</p>
+                      </div>
+                      <p className="text-sm text-white/70">{trend.potential_impact}</p>
+                    </div>
+                  )}
+
+                  {/* Key Indicators & Actions */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Key Indicators */}
+                    {trend.key_indicators && trend.key_indicators.length > 0 && (
+                      <div>
+                        <p className="text-xs text-white/40 uppercase font-medium mb-2 flex items-center gap-2">
+                          <LineChart size={12} /> Key Indicators
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {trend.key_indicators.map((indicator, i) => (
+                            <span key={i} className="text-xs px-3 py-1.5 rounded-lg bg-white/5 text-white/50 border border-white/5">
+                              {indicator}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Recommended Actions */}
+                    {trend.recommended_actions && trend.recommended_actions.length > 0 && (
+                      <div>
+                        <p className="text-xs text-white/40 uppercase font-medium mb-2 flex items-center gap-2">
+                          <ChevronRight size={12} /> Recommended Actions
+                        </p>
+                        <ul className="space-y-1.5">
+                          {trend.recommended_actions.slice(0, 3).map((action, i) => (
+                            <li key={i} className="text-xs text-white/50 flex items-start gap-2">
+                              <span className={`w-1.5 h-1.5 rounded-full ${color.bg} mt-1.5 shrink-0`} />
+                              <span>{action}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );
