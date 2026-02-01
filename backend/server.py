@@ -1405,10 +1405,6 @@ async def export_brief_to_pdf(brief_id: str):
         if not brief:
             raise HTTPException(status_code=404, detail="Brief not found")
         
-        # Use weasyprint or return HTML for client-side PDF
-        # For now, return HTML that can be printed/saved as PDF
-        html_content = brief.get('html', '')
-        
         # Create a downloadable PDF using reportlab
         from reportlab.lib.pagesizes import letter
         from reportlab.pdfgen import canvas
