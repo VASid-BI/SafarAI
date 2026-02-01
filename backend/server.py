@@ -97,6 +97,8 @@ class Event(BaseModel):
     key_entities: Dict[str, Any] = {}
     evidence_quotes: List[str] = []
     source_url: str
+    is_pdf_source: bool = False  # Flag for PDF-sourced content
+    pdf_source_url: Optional[str] = None  # Original PDF URL if parsed from PDF
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class Run(BaseModel):
