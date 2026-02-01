@@ -14,19 +14,6 @@ SafarAI is an automated Competitive Intelligence and Deal Monitoring platform fo
   - Resend: Email delivery for executive briefings (domain: kirikomal.com)
   - Emergent LLM (GPT-5.2): Content classification and intelligence extraction
 
-### User Personas
-1. **Tourism Executives** - Need daily competitive intelligence briefings
-2. **Hospitality Analysts** - Monitor competitor partnerships and deals
-3. **Destination Marketing Organizations** - Track industry funding and campaigns
-
-### Core Requirements (Static)
-1. Source management (add/remove/enable/disable)
-2. Pipeline execution (crawl → classify → brief → email)
-3. Change detection (NEW/UPDATED content only)
-4. Executive brief generation (Top Movers, Partnerships, Funding, Campaigns)
-5. Run health monitoring and logging
-6. Email delivery of intelligence briefs
-
 ### What's Been Implemented (Feb 1, 2026)
 
 #### Core Features
@@ -34,31 +21,30 @@ SafarAI is an automated Competitive Intelligence and Deal Monitoring platform fo
 - [x] Sources management (6 default tourism sources seeded)
 - [x] Pipeline execution with Firecrawl integration
 - [x] LLM classification with Emergent GPT-5.2
-- [x] Executive brief generation with materiality scoring
+- [x] Executive brief generation
 - [x] Run metrics and logs viewer
 - [x] Resend email integration with verified domain (kirikomal.com)
-- [x] Dark professional UI theme ("Midnight Ops")
+- [x] New branded logo (blue-purple gradient with layers icon)
 
 #### Agentic AI Module
-- [x] AI-powered Insights page with:
-  - Impact scenarios with probability/confidence scores
-  - Key findings visualization
-  - Risk alerts and opportunities detection
-  - Dashboard recommendations
-- [x] Trend Forecasting page with:
-  - Category filtering (Partnerships, Funding, Pricing, Technology, Destinations)
-  - Visual confidence gauges
-  - Key indicators and recommended actions
-- [x] Removed: Tasks/Action Items page
-- [x] Removed: Approvals page
+- [x] AI-powered Insights page with expandable impact scenarios
+- [x] Trend Forecasting page with expandable trend cards
+- [x] Read More/Collapse functionality for dense content
+- ~~Tasks/Action Items page~~ (Removed)
+- ~~Approvals page~~ (Removed)
+- ~~Brief Archive page~~ (Removed)
 
-#### New Features (Feb 1, 2026)
-- [x] **Multi-recipient emails**: Domain kirikomal.com verified, supports multiple recipients
-- [x] **PDF Parsing with Reducto**: Automatically processes PDF links from sources
-- [x] **Scheduled Pipeline Runs**: Cron-based scheduling (e.g., "0 9 * * *" for daily 9 AM)
-- [x] **Historical Brief Archive**: Browse and view past intelligence briefs
-- [x] **Source Health Monitoring**: Track success rates and response times per source
-- [x] **Export Briefs to PDF**: Download any brief as a formatted PDF document
+#### Reducto PDF Integration
+- [x] Reducto API integrated for PDF processing
+- [x] `POST /api/process-pdf` endpoint for on-demand PDF processing
+- [x] `GET /api/reducto/status` endpoint to check configuration
+- [x] Pipeline auto-detects PDF URLs and processes with Reducto
+
+#### Other Features
+- [x] Multi-recipient emails (domain kirikomal.com verified)
+- [x] Scheduled Pipeline Runs (cron-based)
+- [x] Source Health Monitoring
+- [x] Export Briefs to PDF
 
 ### API Endpoints
 
@@ -79,14 +65,17 @@ SafarAI is an automated Competitive Intelligence and Deal Monitoring platform fo
 - `GET /api/trends` - Get trend forecasts
 - `GET /api/team` - Get team members
 
-#### New Endpoints (Feb 1, 2026)
-- `GET /api/briefs` - List all historical briefs
-- `GET /api/brief/{id}` - Get specific brief by ID
-- `GET /api/brief/{id}/pdf` - Export brief to PDF
+#### Reducto PDF Endpoints
+- `POST /api/process-pdf` - Process a PDF with Reducto
+- `GET /api/reducto/status` - Check Reducto configuration
+
+#### Scheduling Endpoints
 - `GET /api/schedules` - List scheduled runs
 - `POST /api/schedules` - Create scheduled run
 - `PATCH /api/schedules/{id}` - Enable/disable schedule
 - `DELETE /api/schedules/{id}` - Delete schedule
+
+#### Health & Email Endpoints
 - `GET /api/sources/health` - Get source health metrics
 - `GET /api/email/config` - Get email configuration
 - `POST /api/email/test` - Send test email
@@ -106,32 +95,26 @@ SafarAI is an automated Competitive Intelligence and Deal Monitoring platform fo
 
 ### Prioritized Backlog
 
-**P0 (Critical)**
-- [x] Domain verification for Resend ✓ (kirikomal.com)
-- [x] PDF parsing with Reducto ✓
-- [x] Scheduled pipeline runs ✓
-- [x] Historical brief archive ✓
-- [x] Source health monitoring ✓
-- [x] Export briefs to PDF ✓
+**P0 (Critical)** - ✅ All Complete
+- [x] Domain verification for Resend
+- [x] PDF parsing with Reducto
+- [x] Scheduled pipeline runs
+- [x] Source health monitoring
+- [x] Export briefs to PDF
 
 **P1 (Important)**
-- [ ] Email brief template customization UI
-- [ ] Real-time pipeline progress tracking
-- [ ] Add more tourism/hospitality sources
+- [ ] UI for scheduled runs management
+- [ ] Email template customization UI
+- [ ] Source health dashboard visualization
 
 **P2 (Nice to have)**
-- [ ] Custom event type filters
-- [ ] Integration with Slack/Teams
+- [ ] Real-time pipeline progress tracking
+- [ ] Slack/Teams notifications
 - [ ] Calendar integration for scheduled briefs
 - [ ] Multi-language support
 
-### Next Tasks
-1. Add UI for scheduled runs management
-2. Add UI for source health dashboard
-3. Email template editor
-
 ### Technical Notes
-- Cron expressions use croniter library for validation
-- PDF generation uses reportlab library
-- Source health is logged after each pipeline run
+- Reducto SDK: Use `client.parse.run(input=url_string)` to parse PDFs
+- Cron expressions validated with croniter library
+- PDF export uses reportlab library
 - All datetime values stored as ISO format strings
