@@ -124,6 +124,33 @@ class RunLog(BaseModel):
     meta: Dict[str, Any] = {}
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class ScheduledRun(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    cron_expression: str  # e.g., "0 9 * * *" (9 AM daily)
+    name: str = "Daily Run"
+    enabled: bool = True
+    last_run_at: Optional[datetime] = None
+    next_run_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ScheduledRunCreate(BaseModel):
+    cron_expression: str
+    name: str = "Daily Run"
+    enabled: bool = True
+
+class SourceHealth(BaseModel):
+    source_id: str
+    source_name: str
+    total_runs: int = 0
+    successful_runs: int = 0
+    failed_runs: int = 0
+    success_rate: float = 0.0
+    avg_response_time_ms: float = 0.0
+    last_success_at: Optional[str] = None
+    last_failure_at: Optional[str] = None
+    last_error: Optional[str] = None
+
 # ========================
 # DEFAULT SOURCES
 # ========================
