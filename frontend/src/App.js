@@ -10,7 +10,7 @@ import {
   Plus, CheckCircle2, XCircle, AlertTriangle, Loader2,
   ExternalLink, Trash2, Clock, Zap, ChevronDown,
   TrendingUp, Mail, BarChart3, Shield, Globe as GlobeIcon,
-  ArrowRight, Brain
+  ArrowRight, Brain, Download, Archive, Calendar, RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
