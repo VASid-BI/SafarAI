@@ -593,9 +593,9 @@ async def send_brief_email(html_content: str, run: Dict) -> bool:
 # ========================
 
 async def run_pipeline(run_id: str):
-    """Execute the full intelligence pipeline."""
+    """Execute the full intelligence pipeline with PDF extraction."""
     
-    await log_run(run_id, "info", "Starting pipeline execution")
+    await log_run(run_id, "info", "Starting pipeline execution with PDF processing")
     
     # Get active sources
     sources = await db.sources.find({"active": True}, {"_id": 0}).to_list(100)
@@ -608,11 +608,14 @@ async def run_pipeline(run_id: str):
         "items_new": 0,
         "items_updated": 0,
         "items_unchanged": 0,
-        "events_created": 0
+        "events_created": 0,
+        "pdfs_processed": 0  # Track PDFs processed
     }
     
     all_events = []
+    all_pdf_links = []  # Collect PDF links from all sources
     
+    # Phase 1: Crawl all sources and collect PDF links
     for source in sources:
         source_id = source['id']
         source_url = source['url']
@@ -623,45 +626,51 @@ async def run_pipeline(run_id: str):
         start_time = datetime.now(timezone.utc)
         source_success = False
         source_error = None
+        is_source_pdf = is_pdf_link(source_url)
         
         try:
-            # Check if URL is a PDF
-            is_pdf = source_url.lower().endswith('.pdf')
-            
-            if is_pdf:
-                # Use Reducto for PDF parsing
-                await log_run(run_id, "info", f"Processing PDF with Reducto: {source_name}")
-                try:
-                    # Use Reducto's parse.run method - input is URL string directly
-                    pdf_result = await asyncio.to_thread(
-                        reducto_client.parse.run,
-                        input=source_url
-                    )
-                    
-                    # Extract text from chunks
-                    markdown_parts = []
-                    if hasattr(pdf_result, 'result') and hasattr(pdf_result.result, 'chunks'):
-                        for chunk in pdf_result.result.chunks:
-                            if hasattr(chunk, 'content'):
-                                markdown_parts.append(chunk.content)
-                    markdown = '\n\n'.join(markdown_parts) if markdown_parts else str(pdf_result)
-                    
+            if is_source_pdf:
+                # Source URL is itself a PDF - use Reducto
+                pdf_result = await process_pdf_with_reducto(source_url, run_id)
+                if pdf_result:
+                    markdown = pdf_result['markdown']
                     title = source_name
                     links = []
-                    await log_run(run_id, "info", f"Successfully parsed PDF with Reducto: {len(markdown)} chars")
-                except Exception as pdf_error:
-                    await log_run(run_id, "warn", f"PDF parsing failed, trying Firecrawl: {pdf_error}")
-                    # Fallback to Firecrawl for PDFs
-                    crawl_result = await asyncio.to_thread(
-                        firecrawl.scrape,
-                        source_url,
-                        formats=['markdown']
+                    
+                    # Store item
+                    content_hash = compute_hash(markdown)
+                    item = Item(
+                        source_id=source_id,
+                        url=source_url,
+                        title=title,
+                        content_text=markdown[:50000],
+                        content_type="pdf",
+                        content_hash=content_hash
                     )
-                    markdown = crawl_result.markdown if hasattr(crawl_result, 'markdown') else crawl_result.get('markdown', '')
-                    title = source_name
-                    links = []
+                    item_doc = item.model_dump()
+                    item_doc['fetched_at'] = item_doc['fetched_at'].isoformat()
+                    item_doc['last_seen_at'] = item_doc['last_seen_at'].isoformat()
+                    item_doc['is_pdf'] = True
+                    
+                    await db.items.update_one({"url": source_url}, {"$set": item_doc}, upsert=True)
+                    run_data['items_new'] += 1
+                    run_data['pdfs_processed'] += 1
+                    
+                    # Classify PDF content
+                    classification = await classify_content(markdown, source_url, title)
+                    if classification:
+                        classification['is_pdf_source'] = True
+                        classification['pdf_source_url'] = source_url
+                        event = Event(run_id=run_id, item_id=item.id, **classification)
+                        event_doc = event.model_dump()
+                        event_doc['created_at'] = event_doc['created_at'].isoformat()
+                        await db.events.insert_one(event_doc)
+                        all_events.append(event_doc)
+                        run_data['events_created'] += 1
+                else:
+                    raise Exception("Failed to parse PDF source")
             else:
-                # Crawl with Firecrawl for HTML pages
+                # Crawl HTML page with Firecrawl
                 crawl_result = await asyncio.to_thread(
                     firecrawl.scrape,
                     source_url,
@@ -677,143 +686,110 @@ async def run_pipeline(run_id: str):
                     title = getattr(crawl_result.metadata, 'title', source_name) if hasattr(crawl_result, 'metadata') and crawl_result.metadata else source_name
                     links = getattr(crawl_result, 'links', []) or []
                 else:
-                    # Fallback for dict response
                     markdown = crawl_result.get('markdown', '')
                     title = crawl_result.get('metadata', {}).get('title', source_name)
                     links = crawl_result.get('links', [])
-            
-            # Filter links for PDFs and relevant content
-            filtered_links = []
-            for link in links:
-                if filter_link(link):
-                    filtered_links.append(link)
-                elif link.lower().endswith('.pdf'):
-                    filtered_links.append(link)
-            filtered_links = filtered_links[:8]
-            
-            await log_run(run_id, "info", f"Found {len(filtered_links)} relevant links from {source_name}")
-            
-            # Process main page
-            content_hash = compute_hash(markdown)
-            
-            existing = await db.items.find_one({"url": source_url}, {"_id": 0})
-            
-            is_new = existing is None
-            is_updated = existing and existing.get('content_hash') != content_hash
-            
-            if is_new or is_updated:
-                item = Item(
-                    source_id=source_id,
-                    url=source_url,
-                    title=title,
-                    content_text=markdown[:50000],
-                    content_type="html",
-                    content_hash=content_hash
-                )
                 
-                item_doc = item.model_dump()
-                item_doc['fetched_at'] = item_doc['fetched_at'].isoformat()
-                item_doc['last_seen_at'] = item_doc['last_seen_at'].isoformat()
+                # Extract PDF links from this source
+                pdf_links = extract_pdf_links(markdown, links, source_url)
+                for pdf_link in pdf_links:
+                    if pdf_link not in all_pdf_links:
+                        all_pdf_links.append(pdf_link)
+                        await log_run(run_id, "info", f"Found PDF link: {pdf_link}")
                 
-                if is_new:
-                    await db.items.insert_one(item_doc)
-                    run_data['items_new'] += 1
+                # Filter non-PDF links for regular processing
+                filtered_links = [link for link in links if filter_link(link) and not is_pdf_link(link)][:5]
+                
+                # Process main HTML page
+                content_hash = compute_hash(markdown)
+                existing = await db.items.find_one({"url": source_url}, {"_id": 0})
+                is_new = existing is None
+                is_updated = existing and existing.get('content_hash') != content_hash
+                
+                if is_new or is_updated:
+                    item = Item(
+                        source_id=source_id,
+                        url=source_url,
+                        title=title,
+                        content_text=markdown[:50000],
+                        content_type="html",
+                        content_hash=content_hash
+                    )
+                    item_doc = item.model_dump()
+                    item_doc['fetched_at'] = item_doc['fetched_at'].isoformat()
+                    item_doc['last_seen_at'] = item_doc['last_seen_at'].isoformat()
+                    
+                    if is_new:
+                        await db.items.insert_one(item_doc)
+                        run_data['items_new'] += 1
+                    else:
+                        await db.items.update_one({"url": source_url}, {"$set": item_doc})
+                        run_data['items_updated'] += 1
+                    
+                    classification = await classify_content(markdown, source_url, title)
+                    if classification:
+                        event = Event(run_id=run_id, item_id=item.id, **classification)
+                        event_doc = event.model_dump()
+                        event_doc['created_at'] = event_doc['created_at'].isoformat()
+                        await db.events.insert_one(event_doc)
+                        all_events.append(event_doc)
+                        run_data['events_created'] += 1
                 else:
+                    run_data['items_unchanged'] += 1
                     await db.items.update_one(
                         {"url": source_url},
-                        {"$set": item_doc}
+                        {"$set": {"last_seen_at": datetime.now(timezone.utc).isoformat()}}
                     )
-                    run_data['items_updated'] += 1
                 
-                # Classify content with LLM
-                classification = await classify_content(markdown, source_url, title)
+                run_data['items_total'] += 1
                 
-                if classification:
-                    event = Event(
-                        run_id=run_id,
-                        item_id=item.id,
-                        **classification
-                    )
-                    event_doc = event.model_dump()
-                    event_doc['created_at'] = event_doc['created_at'].isoformat()
-                    await db.events.insert_one(event_doc)
-                    all_events.append(event_doc)
-                    run_data['events_created'] += 1
-            else:
-                run_data['items_unchanged'] += 1
-                await db.items.update_one(
-                    {"url": source_url},
-                    {"$set": {"last_seen_at": datetime.now(timezone.utc).isoformat()}}
-                )
-            
-            run_data['items_total'] += 1
-            
-            # Process child links (limit to 3 per source to stay within limits)
-            for link_url in filtered_links[:3]:
-                try:
-                    link_result = await asyncio.to_thread(
-                        firecrawl.scrape,
-                        link_url,
-                        formats=['markdown']
-                    )
-                    
-                    if link_result:
-                        # Handle Firecrawl Document object
-                        if hasattr(link_result, 'markdown'):
-                            link_markdown = link_result.markdown or ''
-                            link_title = getattr(link_result.metadata, 'title', link_url) if hasattr(link_result, 'metadata') and link_result.metadata else link_url
-                        else:
-                            # Fallback for dict response
-                            link_markdown = link_result.get('markdown', '')
-                            link_title = link_result.get('metadata', {}).get('title', link_url)
-                        link_hash = compute_hash(link_markdown)
-                        
-                        link_existing = await db.items.find_one({"url": link_url}, {"_id": 0})
-                        link_is_new = link_existing is None
-                        link_is_updated = link_existing and link_existing.get('content_hash') != link_hash
-                        
-                        if link_is_new or link_is_updated:
-                            link_item = Item(
-                                source_id=source_id,
-                                url=link_url,
-                                title=link_title,
-                                content_text=link_markdown[:50000],
-                                content_type="html",
-                                content_hash=link_hash
-                            )
-                            
-                            link_doc = link_item.model_dump()
-                            link_doc['fetched_at'] = link_doc['fetched_at'].isoformat()
-                            link_doc['last_seen_at'] = link_doc['last_seen_at'].isoformat()
-                            
-                            if link_is_new:
-                                await db.items.insert_one(link_doc)
-                                run_data['items_new'] += 1
+                # Process non-PDF child links (limit to 2 per source)
+                for link_url in filtered_links[:2]:
+                    try:
+                        link_result = await asyncio.to_thread(
+                            firecrawl.scrape,
+                            link_url,
+                            formats=['markdown']
+                        )
+                        if link_result:
+                            if hasattr(link_result, 'markdown'):
+                                link_markdown = link_result.markdown or ''
+                                link_title = getattr(link_result.metadata, 'title', link_url) if hasattr(link_result, 'metadata') and link_result.metadata else link_url
                             else:
-                                await db.items.update_one({"url": link_url}, {"$set": link_doc})
-                                run_data['items_updated'] += 1
+                                link_markdown = link_result.get('markdown', '')
+                                link_title = link_result.get('metadata', {}).get('title', link_url)
                             
-                            # Classify link content
-                            link_classification = await classify_content(link_markdown, link_url, link_title)
+                            link_hash = compute_hash(link_markdown)
+                            link_existing = await db.items.find_one({"url": link_url}, {"_id": 0})
                             
-                            if link_classification:
-                                link_event = Event(
-                                    run_id=run_id,
-                                    item_id=link_item.id,
-                                    **link_classification
+                            if not link_existing or link_existing.get('content_hash') != link_hash:
+                                link_item = Item(
+                                    source_id=source_id,
+                                    url=link_url,
+                                    title=link_title,
+                                    content_text=link_markdown[:50000],
+                                    content_type="html",
+                                    content_hash=link_hash
                                 )
-                                link_event_doc = link_event.model_dump()
-                                link_event_doc['created_at'] = link_event_doc['created_at'].isoformat()
-                                await db.events.insert_one(link_event_doc)
-                                all_events.append(link_event_doc)
-                                run_data['events_created'] += 1
-                        else:
-                            run_data['items_unchanged'] += 1
-                        
-                        run_data['items_total'] += 1
-                        
-                except Exception as link_error:
-                    await log_run(run_id, "warn", f"Failed to process link: {link_url}", {"error": str(link_error)})
+                                link_doc = link_item.model_dump()
+                                link_doc['fetched_at'] = link_doc['fetched_at'].isoformat()
+                                link_doc['last_seen_at'] = link_doc['last_seen_at'].isoformat()
+                                
+                                await db.items.update_one({"url": link_url}, {"$set": link_doc}, upsert=True)
+                                run_data['items_new'] += 1
+                                
+                                link_classification = await classify_content(link_markdown, link_url, link_title)
+                                if link_classification:
+                                    link_event = Event(run_id=run_id, item_id=link_item.id, **link_classification)
+                                    link_event_doc = link_event.model_dump()
+                                    link_event_doc['created_at'] = link_event_doc['created_at'].isoformat()
+                                    await db.events.insert_one(link_event_doc)
+                                    all_events.append(link_event_doc)
+                                    run_data['events_created'] += 1
+                            
+                            run_data['items_total'] += 1
+                    except Exception as link_error:
+                        await log_run(run_id, "warn", f"Failed to process link: {link_url}", {"error": str(link_error)})
             
             run_data['sources_ok'] += 1
             source_success = True
@@ -828,6 +804,100 @@ async def run_pipeline(run_id: str):
         response_time_ms = (end_time - start_time).total_seconds() * 1000
         
         health_doc = {
+            "id": str(uuid.uuid4()),
+            "source_id": source_id,
+            "source_name": source_name,
+            "run_id": run_id,
+            "success": source_success,
+            "error": source_error,
+            "response_time_ms": response_time_ms,
+            "checked_at": end_time.isoformat()
+        }
+        await db.source_health.insert_one(health_doc)
+    
+    # Phase 2: Process collected PDF links (ensure at least 2 PDFs)
+    await log_run(run_id, "info", f"Found {len(all_pdf_links)} total PDF links to process")
+    
+    # Ensure we process at least 2 PDFs (up to 5 max)
+    min_pdfs = 2
+    max_pdfs = 5
+    pdfs_to_process = all_pdf_links[:max_pdfs]
+    
+    # If we don't have enough PDFs from links, add some known tourism PDF sources
+    fallback_pdf_sources = [
+        "https://www.unwto.org/sites/default/files/2024-01/barometer-january2024-en.pdf",
+        "https://www.wttc.org/-/media/files/reports/economic-impact-research/regions-2023/world2023.pdf"
+    ]
+    
+    if len(pdfs_to_process) < min_pdfs:
+        for fallback_url in fallback_pdf_sources:
+            if fallback_url not in pdfs_to_process and len(pdfs_to_process) < min_pdfs:
+                pdfs_to_process.append(fallback_url)
+                await log_run(run_id, "info", f"Added fallback PDF source: {fallback_url}")
+    
+    await log_run(run_id, "info", f"Processing {len(pdfs_to_process)} PDFs with Reducto")
+    
+    for pdf_url in pdfs_to_process:
+        try:
+            pdf_result = await process_pdf_with_reducto(pdf_url, run_id)
+            
+            if pdf_result:
+                pdf_markdown = pdf_result['markdown']
+                pdf_title = pdf_url.split('/')[-1].replace('.pdf', '').replace('-', ' ').title()
+                
+                # Store PDF item
+                content_hash = compute_hash(pdf_markdown)
+                item = Item(
+                    source_id="pdf-extraction",
+                    url=pdf_url,
+                    title=f"PDF: {pdf_title}",
+                    content_text=pdf_markdown[:50000],
+                    content_type="pdf",
+                    content_hash=content_hash
+                )
+                item_doc = item.model_dump()
+                item_doc['fetched_at'] = item_doc['fetched_at'].isoformat()
+                item_doc['last_seen_at'] = item_doc['last_seen_at'].isoformat()
+                item_doc['is_pdf'] = True
+                item_doc['tables_count'] = pdf_result.get('tables_count', 0)
+                item_doc['figures_count'] = pdf_result.get('figures_count', 0)
+                
+                await db.items.update_one({"url": pdf_url}, {"$set": item_doc}, upsert=True)
+                run_data['items_new'] += 1
+                run_data['pdfs_processed'] += 1
+                run_data['items_total'] += 1
+                
+                # Classify PDF content
+                classification = await classify_content(pdf_markdown, pdf_url, pdf_title)
+                
+                if classification:
+                    # Mark as PDF-sourced content
+                    classification['is_pdf_source'] = True
+                    classification['pdf_source_url'] = pdf_url
+                    
+                    event = Event(
+                        run_id=run_id,
+                        item_id=item.id,
+                        is_pdf_source=True,
+                        pdf_source_url=pdf_url,
+                        **classification
+                    )
+                    event_doc = event.model_dump()
+                    event_doc['created_at'] = event_doc['created_at'].isoformat()
+                    await db.events.insert_one(event_doc)
+                    all_events.append(event_doc)
+                    run_data['events_created'] += 1
+                    
+                    await log_run(run_id, "info", f"Successfully processed PDF: {pdf_url}", {
+                        "title": pdf_title,
+                        "chars": len(pdf_markdown),
+                        "tables": pdf_result.get('tables_count', 0)
+                    })
+                    
+        except Exception as pdf_error:
+            await log_run(run_id, "warn", f"Failed to process PDF: {pdf_url}", {"error": str(pdf_error)})
+    
+    await log_run(run_id, "info", f"PDF processing complete. Processed {run_data['pdfs_processed']} PDFs")
             "id": str(uuid.uuid4()),
             "source_id": source_id,
             "source_name": source_name,
