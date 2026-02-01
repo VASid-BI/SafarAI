@@ -1,4 +1,5 @@
 from fastapi import FastAPI, APIRouter, HTTPException, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,6 +7,7 @@ import os
 import logging
 import hashlib
 import asyncio
+import io
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
@@ -14,6 +16,7 @@ from datetime import datetime, timezone
 import json
 import resend
 from firecrawl import FirecrawlApp
+from reducto import Reducto
 
 # Import agentic modules
 from agentic_models import (
